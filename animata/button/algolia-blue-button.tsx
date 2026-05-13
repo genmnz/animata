@@ -15,7 +15,7 @@ export default function AlgoliaBlueButton() {
           box-shadow: #3c4fe0 0 3px 7px inset;
         }
       `}</style>
-      Aloglia Blue
+      Algolia Blue
     </button>
   );
 }
