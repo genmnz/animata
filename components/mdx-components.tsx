@@ -19,7 +19,7 @@ import { Callout } from "@/components/callout";
 import { CodeBlockWrapper } from "@/components/code-block-wrapper";
 import { ComponentExample } from "@/components/component-example";
 import ComponentListItem from "@/components/component-list-item";
-import { ComponentPreview } from "@/components/component-preview";
+import { ComponentPreview, SingleComponentPreview } from "@/components/component-preview";
 import { ComponentSource } from "@/components/component-source";
 import { CopyButton, CopyNpmCommandButton, CopyTouchCommandButton } from "@/components/copy-button";
 import { CopyProxy } from "@/components/copy-proxy";
@@ -163,6 +163,25 @@ const components = {
   AlertDescription,
   InView,
   PreviewContainer,
+  PreviewGrid: ({ children }: { children: React.ReactNode }) => (
+    <div className="not-prose my-8 grid w-full grid-cols-1 gap-4 md:grid-cols-2">{children}</div>
+  ),
+  PreviewGridItem: ({
+    title,
+    fullWidth,
+    children,
+  }: {
+    title?: string;
+    fullWidth?: boolean;
+    children: React.ReactNode;
+  }) => (
+    <div className={cn("flex min-w-0 flex-col gap-2", fullWidth && "md:col-span-2")}>
+      {title ? <p className="text-sm font-medium text-muted-foreground">{title}</p> : null}
+      <div className="preview-light dark:preview-dark w-full overflow-x-auto rounded-lg border bg-muted/30">
+        {children}
+      </div>
+    </div>
+  ),
   ...baseComponents,
   ChangeLogComponents: ({ children }: { children: React.ReactNode }) => {
     return <div className="grid md:grid-cols-2 gap-2 py-2">{children}</div>;
@@ -256,6 +275,7 @@ const components = {
   Modal,
   Callout,
   ComponentPreview,
+  SingleComponentPreview,
   ComponentExample,
   ComponentSource,
   RegistryInstall,
