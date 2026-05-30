@@ -909,4 +909,1652 @@ export default function LaunchShift() {
 <span class="line"></span></code></pre>`,
     },
   ],
+  "browse/cinema-row": [
+    {
+      name: "cinema-row.tsx",
+      path: "app/demo/library/browse/cinema-row.tsx",
+      language: "tsx",
+      code: `"use client";
+
+import { PlayIcon } from "lucide-react";
+import { IBM_Plex_Sans } from "next/font/google";
+import { useEffect, useState } from "react";
+
+import Marquee from "@/animata/container/marquee";
+import WaveReveal from "@/animata/text/wave-reveal";
+import { cn } from "@/lib/utils";
+
+import { CinemaRowNotes } from "./cinema-row-notes";
+
+const sans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const TMDB_POSTER = (path: string) => \`https://media.themoviedb.org/t/p/w500\${path}\`;
+const TMDB_BACKDROP = (path: string) => \`https://media.themoviedb.org/t/p/w780\${path}\`;
+
+const FEATURED = {
+  eyebrow: "Now streaming",
+  title: "Dune: Part Two",
+  tagline: "Paul goes back to Arrakis. The desert hasn't forgotten him.",
+  runtime: "2h 47m · Sci‑Fi",
+  backdrop: TMDB_BACKDROP("/eZ239CUp1d6OryZEBPnO2n87gMG.jpg"),
+};
+
+const HERO_TITLE_WORDS = FEATURED.title.trim().split(/\\s+/).length;
+const HERO_TITLE_DELAY_MS = 100;
+const HERO_WORD_STAGGER_MS = 50;
+const HERO_WORD_DURATION_MS = 700;
+const HERO_ITEM_DURATION_MS = 580;
+
+function heroSequenceDelays() {
+  const titleEnd =
+    HERO_TITLE_DELAY_MS + (HERO_TITLE_WORDS - 1) * HERO_WORD_STAGGER_MS + HERO_WORD_DURATION_MS;
+
+  const ctaPrimary = titleEnd + 120;
+  const ctaSecondary = titleEnd + 220;
+
+  return {
+    eyebrow: 0,
+    title: HERO_TITLE_DELAY_MS,
+    tagline: titleEnd - 220,
+    runtime: titleEnd - 40,
+    ctaPrimary,
+    ctaSecondary,
+    premieresLabel: ctaSecondary + 140,
+    premieresMeta: ctaSecondary + 220,
+    premieresRail: ctaSecondary + 260,
+  };
+}
+
+function CinemaEntranceStyles() {
+  return (
+    <style>{\`
+      @keyframes cinema-hero-rise {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+          filter: blur(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+          filter: blur(0);
+        }
+      }
+      .cinema-hero-rise {
+        animation: cinema-hero-rise \${HERO_ITEM_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+    \`}</style>
+  );
+}
+
+const HERO_BACKDROPS = [
+  { title: "Dune: Part Two", image: TMDB_BACKDROP("/eZ239CUp1d6OryZEBPnO2n87gMG.jpg") },
+  { title: "Sinners", image: TMDB_BACKDROP("/nAxGnGHOsfzufThz20zgmRwKur3.jpg") },
+  { title: "Oppenheimer", image: TMDB_BACKDROP("/neeNHeXjMF5fXoCJRsOmkNGC7q.jpg") },
+  { title: "Blade Runner 2049", image: TMDB_BACKDROP("/mVr0UiqyltcfqxbAUcLl9zWL8ah.jpg") },
+  { title: "Interstellar", image: TMDB_BACKDROP("/5XNQBqnBwPA9yT0jZ0p3s8bbLh0.jpg") },
+  { title: "Mad Max: Fury Road", image: TMDB_BACKDROP("/uT895WNwm0aIJRtGizcQhrejWUo.jpg") },
+  { title: "Parasite", image: TMDB_BACKDROP("/TU9NIjwzjoKPwQHoHshkFcQUCG.jpg") },
+  { title: "Spider-Verse", image: TMDB_BACKDROP("/9xfDWXAUbFXQK585JvByT5pEAhe.jpg") },
+] as const;
+
+const STILLS_LEFT = [
+  { title: "Anora", image: TMDB_BACKDROP("/qvyOfwTC3qdbzkqdXWSSEMHtjBZ.jpg") },
+  { title: "Challengers", image: TMDB_BACKDROP("/tq8COKsI99Bivjd4CZIYVGoKcIx.jpg") },
+  { title: "The Substance", image: TMDB_BACKDROP("/8ODNt5olCeIqBYTP3GgXEQYTfeX.jpg") },
+  { title: "Everything Everywhere", image: TMDB_BACKDROP("/ss0Os3uWJfQAENILHZUdX8Tt1OC.jpg") },
+  { title: "Poor Things", image: TMDB_BACKDROP("/zh6IdheEYinU4TPtorWsjx6qPQE.jpg") },
+  { title: "The Batman", image: TMDB_BACKDROP("/rvtdN5XkWAfGX6xDuPL6yYS2seK.jpg") },
+] as const;
+
+const STILLS_RIGHT = [
+  { title: "Top Gun: Maverick", image: TMDB_BACKDROP("/AaV1YIdWKnjAIAOe8UUKBFm327v.jpg") },
+  { title: "Banshees of Inisherin", image: TMDB_BACKDROP("/1vXD5HXqkhvsXFHE7KmCPZGPR1e.jpg") },
+  { title: "Sinners", image: TMDB_BACKDROP("/nAxGnGHOsfzufThz20zgmRwKur3.jpg") },
+  { title: "Oppenheimer", image: TMDB_BACKDROP("/neeNHeXjMF5fXoCJRsOmkNGC7q.jpg") },
+  { title: "Interstellar", image: TMDB_BACKDROP("/5XNQBqnBwPA9yT0jZ0p3s8bbLh0.jpg") },
+  { title: "Mad Max: Fury Road", image: TMDB_BACKDROP("/uT895WNwm0aIJRtGizcQhrejWUo.jpg") },
+] as const;
+
+const PREMIERES = [
+  { title: "Sinners", genre: "Horror", poster: TMDB_POSTER("/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg") },
+  { title: "Anora", genre: "Drama", poster: TMDB_POSTER("/oN0o3owobFjePDc5vMdLRAd0jkd.jpg") },
+  { title: "Challengers", genre: "Drama", poster: TMDB_POSTER("/H6vke7zGiuLsz4v4RPeReb9rsv.jpg") },
+  {
+    title: "The Substance",
+    genre: "Horror",
+    poster: TMDB_POSTER("/lqoMzCcZYEFK729d6qzt349fB4o.jpg"),
+  },
+  {
+    title: "Oppenheimer",
+    genre: "Biography",
+    poster: TMDB_POSTER("/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg"),
+  },
+  {
+    title: "Everything Everywhere All at Once",
+    genre: "Sci‑Fi",
+    poster: TMDB_POSTER("/u68AjlvlutfEIcpmbYpKcdi09ut.jpg"),
+  },
+  { title: "Parasite", genre: "Thriller", poster: TMDB_POSTER("/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg") },
+  {
+    title: "Spider-Man: Across the Spider-Verse",
+    genre: "Animation",
+    poster: TMDB_POSTER("/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg"),
+  },
+  {
+    title: "Blade Runner 2049",
+    genre: "Sci‑Fi",
+    poster: TMDB_POSTER("/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg"),
+  },
+  {
+    title: "Interstellar",
+    genre: "Sci‑Fi",
+    poster: TMDB_POSTER("/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg"),
+  },
+  {
+    title: "Poor Things",
+    genre: "Comedy",
+    poster: TMDB_POSTER("/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg"),
+  },
+  {
+    title: "Mad Max: Fury Road",
+    genre: "Action",
+    poster: TMDB_POSTER("/hA2ple9q4qnwxp3hKVNhroipsir.jpg"),
+  },
+] as const;
+
+function CinemaContent({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <div className={cn("mx-auto w-full max-w-6xl px-5 sm:px-8", className)}>{children}</div>;
+}
+
+function BackdropSlide({ title, image }: { title: string; image: string }) {
+  return (
+    <div className="relative h-[min(88svh,920px)] w-[clamp(14rem,42vw,36rem)] shrink-0 overflow-hidden">
+      <img src={image} alt="" aria-hidden="true" className="h-full w-full object-cover" />
+      <span className="sr-only">{title}</span>
+    </div>
+  );
+}
+
+function LandscapeStill({
+  title,
+  image,
+  variant = "wide",
+}: {
+  title: string;
+  image: string;
+  variant?: "wide" | "tall";
+}) {
+  return (
+    <figure
+      className={cn(
+        "group relative w-full max-w-48 shrink-0 overflow-hidden",
+        variant === "tall" ? "aspect-[5/3]" : "aspect-video",
+      )}
+    >
+      <img
+        src={image}
+        alt={\`\${title} still\`}
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
+      <figcaption className="absolute inset-x-0 bottom-0 truncate px-3 pb-2.5 text-[11px] font-semibold tracking-[0.06em] text-white/88 uppercase">
+        {title}
+      </figcaption>
+    </figure>
+  );
+}
+
+function PosterCard({ title, genre, poster }: { title: string; genre: string; poster: string }) {
+  return (
+    <article className="w-[9.75rem] shrink-0 sm:w-[11.25rem]">
+      <div className="aspect-[2/3] overflow-hidden rounded-xl ring-1 ring-white/10">
+        <img
+          src={poster}
+          alt={\`\${title} poster\`}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
+      </div>
+      <h3 className="mt-2.5 truncate text-[15px] font-medium text-white/92">{title}</h3>
+      <p className="text-[13px] text-white/42">{genre}</p>
+    </article>
+  );
+}
+
+function MarqueeWell({
+  children,
+  className,
+  tone = "violet",
+}: {
+  children: React.ReactNode;
+  className?: string;
+  tone?: "violet" | "amber";
+}) {
+  const wellColor = tone === "violet" ? "oklch(0.14 0.03 285)" : "oklch(0.15 0.028 55)";
+
+  return (
+    <div
+      className={cn("relative min-h-[18rem] overflow-hidden", className)}
+      style={{ backgroundColor: wellColor }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function StillMarqueeColumn({
+  stills,
+  reverse = false,
+  duration,
+  variant,
+}: {
+  stills: readonly { title: string; image: string }[];
+  reverse?: boolean;
+  duration: string;
+  variant: "wide" | "tall";
+}) {
+  return (
+    <Marquee
+      vertical
+      reverse={reverse}
+      pauseOnHover
+      applyMask={false}
+      className={cn("h-full p-0", duration)}
+    >
+      {stills.map((still) => (
+        <LandscapeStill
+          key={\`\${reverse ? "rev" : "fwd"}-\${still.title}\`}
+          {...still}
+          variant={variant}
+        />
+      ))}
+    </Marquee>
+  );
+}
+
+function VerticalStillGallery({
+  reducedMotion,
+  className,
+}: {
+  reducedMotion: boolean;
+  className?: string;
+}) {
+  if (reducedMotion) {
+    return (
+      <div className={cn("grid h-full min-h-[18rem] grid-cols-2 gap-2 sm:gap-4", className)}>
+        <MarqueeWell className="h-full min-h-0 overflow-y-auto">
+          <div className="flex flex-col gap-2.5">
+            {STILLS_LEFT.slice(0, 3).map((still) => (
+              <LandscapeStill key={still.title} {...still} variant="wide" />
+            ))}
+          </div>
+        </MarqueeWell>
+        <MarqueeWell tone="amber" className="h-full min-h-0 overflow-y-auto">
+          <div className="flex flex-col gap-2.5">
+            {STILLS_RIGHT.slice(0, 3).map((still) => (
+              <LandscapeStill key={still.title} {...still} variant="tall" />
+            ))}
+          </div>
+        </MarqueeWell>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex justify-evenly md:grid h-full min-h-[18rem] md:grid-cols-2 gap-2 sm:gap-4",
+        className,
+      )}
+    >
+      <MarqueeWell className="h-full min-h-0 max-w-fit">
+        <StillMarqueeColumn
+          stills={STILLS_LEFT}
+          duration="[--duration:32s] [--gap:12px]"
+          variant="wide"
+        />
+      </MarqueeWell>
+      <MarqueeWell tone="amber" className="h-full min-h-0 max-w-fit">
+        <StillMarqueeColumn
+          stills={STILLS_RIGHT}
+          reverse
+          duration="[--duration:38s] [--gap:12px]"
+          variant="tall"
+        />
+      </MarqueeWell>
+    </div>
+  );
+}
+
+function PremieresSection({ reducedMotion }: { reducedMotion: boolean }) {
+  const delays = heroSequenceDelays();
+
+  return (
+    <section className="pb-6 pt-8" aria-labelledby="premieres-heading">
+      <CinemaContent className="mb-4 flex items-end justify-between gap-4">
+        <h2
+          id="premieres-heading"
+          className={cn(
+            "text-[22px] font-semibold tracking-[-0.02em]",
+            !reducedMotion && "cinema-hero-rise",
+          )}
+          style={reducedMotion ? undefined : { animationDelay: \`\${delays.premieresLabel}ms\` }}
+        >
+          Premieres
+        </h2>
+        <span
+          className={cn("text-[13px] text-white/38", !reducedMotion && "cinema-hero-rise")}
+          style={reducedMotion ? undefined : { animationDelay: \`\${delays.premieresMeta}ms\` }}
+        >
+          Now playing
+        </span>
+      </CinemaContent>
+
+      <div
+        className={cn(!reducedMotion && "cinema-hero-rise")}
+        style={reducedMotion ? undefined : { animationDelay: \`\${delays.premieresRail}ms\` }}
+      >
+        {reducedMotion ? (
+          <CinemaContent className="overflow-x-auto overscroll-x-contain pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex w-max gap-4 sm:gap-5">
+              {PREMIERES.map((film) => (
+                <PosterCard key={film.title} {...film} />
+              ))}
+            </div>
+          </CinemaContent>
+        ) : (
+          <div className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+            <Marquee
+              pauseOnHover
+              applyMask={false}
+              className="py-1 pl-5 [--duration:38s] [--gap:1rem] sm:pl-8 sm:[--gap:1.25rem]"
+            >
+              {PREMIERES.map((film) => (
+                <PosterCard key={film.title} {...film} />
+              ))}
+            </Marquee>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+function HeroPremiereCopy({ reducedMotion }: { reducedMotion: boolean }) {
+  const delays = heroSequenceDelays();
+
+  if (reducedMotion) {
+    return (
+      <>
+        <p className="text-[13px] font-medium tracking-[0.08em] text-white/45 uppercase">
+          {FEATURED.eyebrow}
+        </p>
+        <h1 className="mt-3 max-w-[11ch] -translate-x-[0.13ex] text-balance text-[clamp(3.25rem,14vw,7.5rem)] leading-[0.9] font-semibold tracking-[-0.045em]">
+          {FEATURED.title}
+        </h1>
+        <p className="mt-5 max-w-[28ch] text-[17px] leading-snug text-white/58 sm:text-[19px]">
+          {FEATURED.tagline}
+        </p>
+        <p className="mt-3 text-[13px] text-white/38">{FEATURED.runtime}</p>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="inline-flex h-11 touch-manipulation items-center gap-2 rounded-full bg-white px-6 text-[14px] font-semibold text-black transition-transform active:scale-[0.98]"
+          >
+            <PlayIcon aria-hidden="true" className="size-4 fill-current" />
+            Play
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-11 touch-manipulation items-center justify-center rounded-full border border-white/18 bg-white/[0.04] px-6 text-[14px] font-medium text-white/78 transition-colors hover:bg-white/[0.08] active:scale-[0.98]"
+          >
+            Add to Up Next
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <p
+        className="cinema-hero-rise text-[13px] font-medium tracking-[0.08em] text-white/45 uppercase"
+        style={{ animationDelay: \`\${delays.eyebrow}ms\` }}
+      >
+        {FEATURED.eyebrow}
+      </p>
+
+      <h1 className="mt-3 text-balance leading-[0.9]">
+        <WaveReveal
+          text={FEATURED.title}
+          mode="word"
+          direction="up"
+          blur
+          duration={\`\${HERO_WORD_DURATION_MS}ms\`}
+          delay={delays.title}
+          className=" -translate-x-[0.13ex] justify-start px-0 text-left font-semibold tracking-[-0.02em] text-[clamp(3.25rem,14vw,7.5rem)] md:px-0 md:text-[clamp(3.25rem,14vw,7.5rem)]"
+        />
+      </h1>
+
+      <p
+        className="cinema-hero-rise mt-5 max-w-[28ch] text-[17px] leading-snug text-white/58 sm:text-[19px]"
+        style={{ animationDelay: \`\${delays.tagline}ms\` }}
+      >
+        {FEATURED.tagline}
+      </p>
+
+      <p
+        className="cinema-hero-rise mt-3 text-[13px] text-white/38"
+        style={{ animationDelay: \`\${delays.runtime}ms\` }}
+      >
+        {FEATURED.runtime}
+      </p>
+
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          className="cinema-hero-rise inline-flex h-11 touch-manipulation items-center gap-2 rounded-full bg-white px-6 text-[14px] font-semibold text-black transition-transform active:scale-[0.98]"
+          style={{ animationDelay: \`\${delays.ctaPrimary}ms\` }}
+        >
+          <PlayIcon aria-hidden="true" className="size-4 fill-current" />
+          Play
+        </button>
+        <button
+          type="button"
+          className="cinema-hero-rise inline-flex h-11 touch-manipulation items-center justify-center rounded-full border border-white/18 bg-white/[0.04] px-6 text-[14px] font-medium text-white/78 transition-colors hover:bg-white/[0.08] active:scale-[0.98]"
+          style={{ animationDelay: \`\${delays.ctaSecondary}ms\` }}
+        >
+          Add to Up Next
+        </button>
+      </div>
+    </>
+  );
+}
+
+function CraftFeaturePanel({ reducedMotion }: { reducedMotion: boolean }) {
+  return (
+    <div className="@container overflow-hidden rounded-[1.35rem] border border-white/10 bg-[oklch(0.12_0.025_285)] shadow-[inset_0_1px_0_oklch(1_0_0/0.05)]">
+      <div className="grid md:grid-cols-[1fr_auto]">
+        <div className="flex flex-col justify-end gap-3 border-b border-white/8 p-5 sm:p-6 md:border-r md:border-b-0 md:p-6 lg:p-8">
+          <p className="text-[13px] font-medium tracking-[0.08em] text-white/42 uppercase">
+            The craft
+          </p>
+          <h2
+            id="editorial-heading"
+            className="text-balance text-[clamp(1.5rem,4.5cqi,2.25rem)] leading-[1.08] font-semibold tracking-[-0.03em]"
+          >
+            Built for the big screen. Fine on your couch.
+          </h2>
+          <p className="text-[14px] leading-relaxed text-white/52 sm:text-[15px]">
+            Hero, poster row, two still columns — same page, different speeds.
+          </p>
+        </div>
+
+        <div className="max-h-[18rem] px-4x">
+          <VerticalStillGallery reducedMotion={reducedMotion} className="h-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CinemaRow() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReducedMotion(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  return (
+    <>
+      <CinemaEntranceStyles />
+      <div
+        className={cn(
+          sans.variable,
+          sans.className,
+          "min-h-svh bg-black text-white selection:bg-white/20",
+        )}
+      >
+        {/* Hero — backdrop marquee + premiere type */}
+        <section className="relative isolate overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,oklch(0.28_0.08_280_/_0.55)_0%,transparent_58%),linear-gradient(to_bottom,oklch(0.12_0.02_280)_0%,black_72%)]"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black to-transparent"
+          />
+
+          <CinemaContent className="relative z-10 flex min-h-[min(88svh,920px)] flex-col justify-end pb-[calc(var(--demo-chrome-reserve,5rem)+2.5rem)] pt-[max(1.25rem,env(safe-area-inset-top))]">
+            <HeroPremiereCopy reducedMotion={reducedMotion} />
+          </CinemaContent>
+        </section>
+
+        <PremieresSection reducedMotion={reducedMotion} />
+
+        {/* Editorial + opposing vertical still marquees */}
+        <section
+          className="border-t border-white/[0.06] py-16 sm:py-24"
+          aria-labelledby="editorial-heading"
+        >
+          <CinemaContent>
+            <CraftFeaturePanel reducedMotion={reducedMotion} />
+          </CinemaContent>
+        </section>
+      </div>
+
+      <CinemaRowNotes />
+    </>
+  );
+}
+`,
+      htmlLight: `<pre class="shiki github-light" tabindex="0"><code><span class="line"><span style="color:#032F62">"use client"</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">import</span><span style="color:#24292E"> { PlayIcon } </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "lucide-react"</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">import</span><span style="color:#24292E"> { IBM_Plex_Sans } </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "next/font/google"</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">import</span><span style="color:#24292E"> { useEffect, useState } </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "react"</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">import</span><span style="color:#24292E"> Marquee </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "@/animata/container/marquee"</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">import</span><span style="color:#24292E"> WaveReveal </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "@/animata/text/wave-reveal"</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">import</span><span style="color:#24292E"> { cn } </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "@/lib/utils"</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">import</span><span style="color:#24292E"> { CinemaRowNotes } </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "./cinema-row-notes"</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> sans</span><span style="color:#D73A49"> =</span><span style="color:#6F42C1"> IBM_Plex_Sans</span><span style="color:#24292E">({</span></span>
+<span class="line"><span style="color:#24292E">  subsets: [</span><span style="color:#032F62">"latin"</span><span style="color:#24292E">],</span></span>
+<span class="line"><span style="color:#24292E">  weight: [</span><span style="color:#032F62">"400"</span><span style="color:#24292E">, </span><span style="color:#032F62">"500"</span><span style="color:#24292E">, </span><span style="color:#032F62">"600"</span><span style="color:#24292E">],</span></span>
+<span class="line"><span style="color:#24292E">  variable: </span><span style="color:#032F62">"--font-sans"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">  display: </span><span style="color:#032F62">"swap"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#6F42C1"> TMDB_POSTER</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> (</span><span style="color:#E36209">path</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">) </span><span style="color:#D73A49">=></span><span style="color:#032F62"> \`https://media.themoviedb.org/t/p/w500\${</span><span style="color:#24292E">path</span><span style="color:#032F62">}\`</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#6F42C1"> TMDB_BACKDROP</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> (</span><span style="color:#E36209">path</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">) </span><span style="color:#D73A49">=></span><span style="color:#032F62"> \`https://media.themoviedb.org/t/p/w780\${</span><span style="color:#24292E">path</span><span style="color:#032F62">}\`</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> FEATURED</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#24292E">  eyebrow: </span><span style="color:#032F62">"Now streaming"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">  title: </span><span style="color:#032F62">"Dune: Part Two"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">  tagline: </span><span style="color:#032F62">"Paul goes back to Arrakis. The desert hasn't forgotten him."</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">  runtime: </span><span style="color:#032F62">"2h 47m · Sci‑Fi"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">  backdrop: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/eZ239CUp1d6OryZEBPnO2n87gMG.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> HERO_TITLE_WORDS</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> FEATURED</span><span style="color:#24292E">.title.</span><span style="color:#6F42C1">trim</span><span style="color:#24292E">().</span><span style="color:#6F42C1">split</span><span style="color:#24292E">(</span><span style="color:#032F62">/</span><span style="color:#005CC5">\\s</span><span style="color:#D73A49">+</span><span style="color:#032F62">/</span><span style="color:#24292E">).</span><span style="color:#005CC5">length</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> HERO_TITLE_DELAY_MS</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> 100</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> HERO_WORD_STAGGER_MS</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> 50</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> HERO_WORD_DURATION_MS</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> 700</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> HERO_ITEM_DURATION_MS</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> 580</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> heroSequenceDelays</span><span style="color:#24292E">() {</span></span>
+<span class="line"><span style="color:#D73A49">  const</span><span style="color:#005CC5"> titleEnd</span><span style="color:#D73A49"> =</span></span>
+<span class="line"><span style="color:#005CC5">    HERO_TITLE_DELAY_MS</span><span style="color:#D73A49"> +</span><span style="color:#24292E"> (</span><span style="color:#005CC5">HERO_TITLE_WORDS</span><span style="color:#D73A49"> -</span><span style="color:#005CC5"> 1</span><span style="color:#24292E">) </span><span style="color:#D73A49">*</span><span style="color:#005CC5"> HERO_WORD_STAGGER_MS</span><span style="color:#D73A49"> +</span><span style="color:#005CC5"> HERO_WORD_DURATION_MS</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">  const</span><span style="color:#005CC5"> ctaPrimary</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> titleEnd </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 120</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">  const</span><span style="color:#005CC5"> ctaSecondary</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> titleEnd </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 220</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#24292E">    eyebrow: </span><span style="color:#005CC5">0</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#005CC5">HERO_TITLE_DELAY_MS</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    tagline: titleEnd </span><span style="color:#D73A49">-</span><span style="color:#005CC5"> 220</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    runtime: titleEnd </span><span style="color:#D73A49">-</span><span style="color:#005CC5"> 40</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    ctaPrimary,</span></span>
+<span class="line"><span style="color:#24292E">    ctaSecondary,</span></span>
+<span class="line"><span style="color:#24292E">    premieresLabel: ctaSecondary </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 140</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    premieresMeta: ctaSecondary </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 220</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    premieresRail: ctaSecondary </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 260</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">  };</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> CinemaEntranceStyles</span><span style="color:#24292E">() {</span></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#22863A">style</span><span style="color:#24292E">>{</span><span style="color:#032F62">\`</span></span>
+<span class="line"><span style="color:#032F62">      @keyframes cinema-hero-rise {</span></span>
+<span class="line"><span style="color:#032F62">        from {</span></span>
+<span class="line"><span style="color:#032F62">          opacity: 0;</span></span>
+<span class="line"><span style="color:#032F62">          transform: translateY(14px);</span></span>
+<span class="line"><span style="color:#032F62">          filter: blur(8px);</span></span>
+<span class="line"><span style="color:#032F62">        }</span></span>
+<span class="line"><span style="color:#032F62">        to {</span></span>
+<span class="line"><span style="color:#032F62">          opacity: 1;</span></span>
+<span class="line"><span style="color:#032F62">          transform: translateY(0);</span></span>
+<span class="line"><span style="color:#032F62">          filter: blur(0);</span></span>
+<span class="line"><span style="color:#032F62">        }</span></span>
+<span class="line"><span style="color:#032F62">      }</span></span>
+<span class="line"><span style="color:#032F62">      .cinema-hero-rise {</span></span>
+<span class="line"><span style="color:#032F62">        animation: cinema-hero-rise \${</span><span style="color:#005CC5">HERO_ITEM_DURATION_MS</span><span style="color:#032F62">}ms cubic-bezier(0.22, 1, 0.36, 1) both;</span></span>
+<span class="line"><span style="color:#032F62">      }</span></span>
+<span class="line"><span style="color:#032F62">    \`</span><span style="color:#24292E">}&#x3C;/</span><span style="color:#22863A">style</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> HERO_BACKDROPS</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> [</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Dune: Part Two"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/eZ239CUp1d6OryZEBPnO2n87gMG.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Sinners"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/nAxGnGHOsfzufThz20zgmRwKur3.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Oppenheimer"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/neeNHeXjMF5fXoCJRsOmkNGC7q.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Blade Runner 2049"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/mVr0UiqyltcfqxbAUcLl9zWL8ah.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Interstellar"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/5XNQBqnBwPA9yT0jZ0p3s8bbLh0.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Mad Max: Fury Road"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/uT895WNwm0aIJRtGizcQhrejWUo.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Parasite"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/TU9NIjwzjoKPwQHoHshkFcQUCG.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Spider-Verse"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/9xfDWXAUbFXQK585JvByT5pEAhe.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">] </span><span style="color:#D73A49">as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> STILLS_LEFT</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> [</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Anora"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/qvyOfwTC3qdbzkqdXWSSEMHtjBZ.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Challengers"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/tq8COKsI99Bivjd4CZIYVGoKcIx.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"The Substance"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/8ODNt5olCeIqBYTP3GgXEQYTfeX.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Everything Everywhere"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/ss0Os3uWJfQAENILHZUdX8Tt1OC.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Poor Things"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/zh6IdheEYinU4TPtorWsjx6qPQE.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"The Batman"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/rvtdN5XkWAfGX6xDuPL6yYS2seK.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">] </span><span style="color:#D73A49">as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> STILLS_RIGHT</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> [</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Top Gun: Maverick"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/AaV1YIdWKnjAIAOe8UUKBFm327v.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Banshees of Inisherin"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/1vXD5HXqkhvsXFHE7KmCPZGPR1e.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Sinners"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/nAxGnGHOsfzufThz20zgmRwKur3.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Oppenheimer"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/neeNHeXjMF5fXoCJRsOmkNGC7q.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Interstellar"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/5XNQBqnBwPA9yT0jZ0p3s8bbLh0.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Mad Max: Fury Road"</span><span style="color:#24292E">, image: </span><span style="color:#6F42C1">TMDB_BACKDROP</span><span style="color:#24292E">(</span><span style="color:#032F62">"/uT895WNwm0aIJRtGizcQhrejWUo.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">] </span><span style="color:#D73A49">as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> PREMIERES</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> [</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Sinners"</span><span style="color:#24292E">, genre: </span><span style="color:#032F62">"Horror"</span><span style="color:#24292E">, poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Anora"</span><span style="color:#24292E">, genre: </span><span style="color:#032F62">"Drama"</span><span style="color:#24292E">, poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/oN0o3owobFjePDc5vMdLRAd0jkd.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Challengers"</span><span style="color:#24292E">, genre: </span><span style="color:#032F62">"Drama"</span><span style="color:#24292E">, poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/H6vke7zGiuLsz4v4RPeReb9rsv.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  {</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#032F62">"The Substance"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    genre: </span><span style="color:#032F62">"Horror"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/lqoMzCcZYEFK729d6qzt349fB4o.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">  },</span></span>
+<span class="line"><span style="color:#24292E">  {</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#032F62">"Oppenheimer"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    genre: </span><span style="color:#032F62">"Biography"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">  },</span></span>
+<span class="line"><span style="color:#24292E">  {</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#032F62">"Everything Everywhere All at Once"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    genre: </span><span style="color:#032F62">"Sci‑Fi"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/u68AjlvlutfEIcpmbYpKcdi09ut.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">  },</span></span>
+<span class="line"><span style="color:#24292E">  { title: </span><span style="color:#032F62">"Parasite"</span><span style="color:#24292E">, genre: </span><span style="color:#032F62">"Thriller"</span><span style="color:#24292E">, poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg"</span><span style="color:#24292E">) },</span></span>
+<span class="line"><span style="color:#24292E">  {</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#032F62">"Spider-Man: Across the Spider-Verse"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    genre: </span><span style="color:#032F62">"Animation"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">  },</span></span>
+<span class="line"><span style="color:#24292E">  {</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#032F62">"Blade Runner 2049"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    genre: </span><span style="color:#032F62">"Sci‑Fi"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">  },</span></span>
+<span class="line"><span style="color:#24292E">  {</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#032F62">"Interstellar"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    genre: </span><span style="color:#032F62">"Sci‑Fi"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">  },</span></span>
+<span class="line"><span style="color:#24292E">  {</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#032F62">"Poor Things"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    genre: </span><span style="color:#032F62">"Comedy"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">  },</span></span>
+<span class="line"><span style="color:#24292E">  {</span></span>
+<span class="line"><span style="color:#24292E">    title: </span><span style="color:#032F62">"Mad Max: Fury Road"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    genre: </span><span style="color:#032F62">"Action"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">    poster: </span><span style="color:#6F42C1">TMDB_POSTER</span><span style="color:#24292E">(</span><span style="color:#032F62">"/hA2ple9q4qnwxp3hKVNhroipsir.jpg"</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">  },</span></span>
+<span class="line"><span style="color:#24292E">] </span><span style="color:#D73A49">as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> CinemaContent</span><span style="color:#24292E">({ </span><span style="color:#E36209">className</span><span style="color:#24292E">, </span><span style="color:#E36209">children</span><span style="color:#24292E"> }</span><span style="color:#D73A49">:</span><span style="color:#24292E"> { </span><span style="color:#E36209">className</span><span style="color:#D73A49">?:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">; </span><span style="color:#E36209">children</span><span style="color:#D73A49">:</span><span style="color:#6F42C1"> React</span><span style="color:#24292E">.</span><span style="color:#6F42C1">ReactNode</span><span style="color:#24292E"> }) {</span></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span><span style="color:#032F62">"mx-auto w-full max-w-6xl px-5 sm:px-8"</span><span style="color:#24292E">, className)}>{children}&#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">>;</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> BackdropSlide</span><span style="color:#24292E">({ </span><span style="color:#E36209">title</span><span style="color:#24292E">, </span><span style="color:#E36209">image</span><span style="color:#24292E"> }</span><span style="color:#D73A49">:</span><span style="color:#24292E"> { </span><span style="color:#E36209">title</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">; </span><span style="color:#E36209">image</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E"> }) {</span></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"relative h-[min(88svh,920px)] w-[clamp(14rem,42vw,36rem)] shrink-0 overflow-hidden"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">img</span><span style="color:#6F42C1"> src</span><span style="color:#D73A49">=</span><span style="color:#24292E">{image} </span><span style="color:#6F42C1">alt</span><span style="color:#D73A49">=</span><span style="color:#032F62">""</span><span style="color:#6F42C1"> aria-hidden</span><span style="color:#D73A49">=</span><span style="color:#032F62">"true"</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"h-full w-full object-cover"</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">span</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"sr-only"</span><span style="color:#24292E">>{title}&#x3C;/</span><span style="color:#22863A">span</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> LandscapeStill</span><span style="color:#24292E">({</span></span>
+<span class="line"><span style="color:#E36209">  title</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">  image</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">  variant</span><span style="color:#D73A49"> =</span><span style="color:#032F62"> "wide"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">}</span><span style="color:#D73A49">:</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#E36209">  title</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#E36209">  image</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#E36209">  variant</span><span style="color:#D73A49">?:</span><span style="color:#032F62"> "wide"</span><span style="color:#D73A49"> |</span><span style="color:#032F62"> "tall"</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#24292E">}) {</span></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#22863A">figure</span></span>
+<span class="line"><span style="color:#6F42C1">      className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span></span>
+<span class="line"><span style="color:#032F62">        "group relative w-full max-w-48 shrink-0 overflow-hidden"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">        variant </span><span style="color:#D73A49">===</span><span style="color:#032F62"> "tall"</span><span style="color:#D73A49"> ?</span><span style="color:#032F62"> "aspect-[5/3]"</span><span style="color:#D73A49"> :</span><span style="color:#032F62"> "aspect-video"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">      )}</span></span>
+<span class="line"><span style="color:#24292E">    ></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">img</span></span>
+<span class="line"><span style="color:#6F42C1">        src</span><span style="color:#D73A49">=</span><span style="color:#24292E">{image}</span></span>
+<span class="line"><span style="color:#6F42C1">        alt</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#032F62">\`\${</span><span style="color:#24292E">title</span><span style="color:#032F62">} still\`</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#6F42C1">        loading</span><span style="color:#D73A49">=</span><span style="color:#032F62">"lazy"</span></span>
+<span class="line"><span style="color:#6F42C1">        decoding</span><span style="color:#D73A49">=</span><span style="color:#032F62">"async"</span></span>
+<span class="line"><span style="color:#6F42C1">        className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"</span></span>
+<span class="line"><span style="color:#24292E">      /></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"pointer-events-none absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent"</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">figcaption</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"absolute inset-x-0 bottom-0 truncate px-3 pb-2.5 text-[11px] font-semibold tracking-[0.06em] text-white/88 uppercase"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        {title}</span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">figcaption</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/</span><span style="color:#22863A">figure</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> PosterCard</span><span style="color:#24292E">({ </span><span style="color:#E36209">title</span><span style="color:#24292E">, </span><span style="color:#E36209">genre</span><span style="color:#24292E">, </span><span style="color:#E36209">poster</span><span style="color:#24292E"> }</span><span style="color:#D73A49">:</span><span style="color:#24292E"> { </span><span style="color:#E36209">title</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">; </span><span style="color:#E36209">genre</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">; </span><span style="color:#E36209">poster</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E"> }) {</span></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#22863A">article</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"w-[9.75rem] shrink-0 sm:w-[11.25rem]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"aspect-[2/3] overflow-hidden rounded-xl ring-1 ring-white/10"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">img</span></span>
+<span class="line"><span style="color:#6F42C1">          src</span><span style="color:#D73A49">=</span><span style="color:#24292E">{poster}</span></span>
+<span class="line"><span style="color:#6F42C1">          alt</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#032F62">\`\${</span><span style="color:#24292E">title</span><span style="color:#032F62">} poster\`</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#6F42C1">          loading</span><span style="color:#D73A49">=</span><span style="color:#032F62">"lazy"</span></span>
+<span class="line"><span style="color:#6F42C1">          decoding</span><span style="color:#D73A49">=</span><span style="color:#032F62">"async"</span></span>
+<span class="line"><span style="color:#6F42C1">          className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"h-full w-full object-cover"</span></span>
+<span class="line"><span style="color:#24292E">        /></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">h3</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"mt-2.5 truncate text-[15px] font-medium text-white/92"</span><span style="color:#24292E">>{title}&#x3C;/</span><span style="color:#22863A">h3</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">p</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"text-[13px] text-white/42"</span><span style="color:#24292E">>{genre}&#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/</span><span style="color:#22863A">article</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> MarqueeWell</span><span style="color:#24292E">({</span></span>
+<span class="line"><span style="color:#E36209">  children</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">  className</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">  tone</span><span style="color:#D73A49"> =</span><span style="color:#032F62"> "violet"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">}</span><span style="color:#D73A49">:</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#E36209">  children</span><span style="color:#D73A49">:</span><span style="color:#6F42C1"> React</span><span style="color:#24292E">.</span><span style="color:#6F42C1">ReactNode</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#E36209">  className</span><span style="color:#D73A49">?:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#E36209">  tone</span><span style="color:#D73A49">?:</span><span style="color:#032F62"> "violet"</span><span style="color:#D73A49"> |</span><span style="color:#032F62"> "amber"</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#24292E">}) {</span></span>
+<span class="line"><span style="color:#D73A49">  const</span><span style="color:#005CC5"> wellColor</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> tone </span><span style="color:#D73A49">===</span><span style="color:#032F62"> "violet"</span><span style="color:#D73A49"> ?</span><span style="color:#032F62"> "oklch(0.14 0.03 285)"</span><span style="color:#D73A49"> :</span><span style="color:#032F62"> "oklch(0.15 0.028 55)"</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#22863A">div</span></span>
+<span class="line"><span style="color:#6F42C1">      className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span><span style="color:#032F62">"relative min-h-[18rem] overflow-hidden"</span><span style="color:#24292E">, className)}</span></span>
+<span class="line"><span style="color:#6F42C1">      style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{{ backgroundColor: wellColor }}</span></span>
+<span class="line"><span style="color:#24292E">    ></span></span>
+<span class="line"><span style="color:#24292E">      {children}</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> StillMarqueeColumn</span><span style="color:#24292E">({</span></span>
+<span class="line"><span style="color:#E36209">  stills</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">  reverse</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> false</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">  duration</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">  variant</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">}</span><span style="color:#D73A49">:</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#E36209">  stills</span><span style="color:#D73A49">:</span><span style="color:#D73A49"> readonly</span><span style="color:#24292E"> { </span><span style="color:#E36209">title</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">; </span><span style="color:#E36209">image</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E"> }[];</span></span>
+<span class="line"><span style="color:#E36209">  reverse</span><span style="color:#D73A49">?:</span><span style="color:#005CC5"> boolean</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#E36209">  duration</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#E36209">  variant</span><span style="color:#D73A49">:</span><span style="color:#032F62"> "wide"</span><span style="color:#D73A49"> |</span><span style="color:#032F62"> "tall"</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#24292E">}) {</span></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#005CC5">Marquee</span></span>
+<span class="line"><span style="color:#6F42C1">      vertical</span></span>
+<span class="line"><span style="color:#6F42C1">      reverse</span><span style="color:#D73A49">=</span><span style="color:#24292E">{reverse}</span></span>
+<span class="line"><span style="color:#6F42C1">      pauseOnHover</span></span>
+<span class="line"><span style="color:#6F42C1">      applyMask</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#005CC5">false</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#6F42C1">      className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span><span style="color:#032F62">"h-full p-0"</span><span style="color:#24292E">, duration)}</span></span>
+<span class="line"><span style="color:#24292E">    ></span></span>
+<span class="line"><span style="color:#24292E">      {stills.</span><span style="color:#6F42C1">map</span><span style="color:#24292E">((</span><span style="color:#E36209">still</span><span style="color:#24292E">) </span><span style="color:#D73A49">=></span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#005CC5">LandscapeStill</span></span>
+<span class="line"><span style="color:#6F42C1">          key</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#032F62">\`\${</span><span style="color:#24292E">reverse</span><span style="color:#D73A49"> ?</span><span style="color:#032F62"> "rev"</span><span style="color:#D73A49"> :</span><span style="color:#032F62"> "fwd"}-\${</span><span style="color:#24292E">still</span><span style="color:#032F62">.</span><span style="color:#24292E">title</span><span style="color:#032F62">}\`</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#24292E">          {</span><span style="color:#D73A49">...</span><span style="color:#24292E">still}</span></span>
+<span class="line"><span style="color:#6F42C1">          variant</span><span style="color:#D73A49">=</span><span style="color:#24292E">{variant}</span></span>
+<span class="line"><span style="color:#24292E">        /></span></span>
+<span class="line"><span style="color:#24292E">      ))}</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/</span><span style="color:#005CC5">Marquee</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> VerticalStillGallery</span><span style="color:#24292E">({</span></span>
+<span class="line"><span style="color:#E36209">  reducedMotion</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">  className</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">}</span><span style="color:#D73A49">:</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#E36209">  reducedMotion</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> boolean</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#E36209">  className</span><span style="color:#D73A49">?:</span><span style="color:#005CC5"> string</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#24292E">}) {</span></span>
+<span class="line"><span style="color:#D73A49">  if</span><span style="color:#24292E"> (reducedMotion) {</span></span>
+<span class="line"><span style="color:#D73A49">    return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span><span style="color:#032F62">"grid h-full min-h-[18rem] grid-cols-2 gap-2 sm:gap-4"</span><span style="color:#24292E">, className)}></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#005CC5">MarqueeWell</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"h-full min-h-0 overflow-y-auto"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"flex flex-col gap-2.5"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">            {</span><span style="color:#005CC5">STILLS_LEFT</span><span style="color:#24292E">.</span><span style="color:#6F42C1">slice</span><span style="color:#24292E">(</span><span style="color:#005CC5">0</span><span style="color:#24292E">, </span><span style="color:#005CC5">3</span><span style="color:#24292E">).</span><span style="color:#6F42C1">map</span><span style="color:#24292E">((</span><span style="color:#E36209">still</span><span style="color:#24292E">) </span><span style="color:#D73A49">=></span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">              &#x3C;</span><span style="color:#005CC5">LandscapeStill</span><span style="color:#6F42C1"> key</span><span style="color:#D73A49">=</span><span style="color:#24292E">{still.title} {</span><span style="color:#D73A49">...</span><span style="color:#24292E">still} </span><span style="color:#6F42C1">variant</span><span style="color:#D73A49">=</span><span style="color:#032F62">"wide"</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">            ))}</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#005CC5">MarqueeWell</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#005CC5">MarqueeWell</span><span style="color:#6F42C1"> tone</span><span style="color:#D73A49">=</span><span style="color:#032F62">"amber"</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"h-full min-h-0 overflow-y-auto"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"flex flex-col gap-2.5"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">            {</span><span style="color:#005CC5">STILLS_RIGHT</span><span style="color:#24292E">.</span><span style="color:#6F42C1">slice</span><span style="color:#24292E">(</span><span style="color:#005CC5">0</span><span style="color:#24292E">, </span><span style="color:#005CC5">3</span><span style="color:#24292E">).</span><span style="color:#6F42C1">map</span><span style="color:#24292E">((</span><span style="color:#E36209">still</span><span style="color:#24292E">) </span><span style="color:#D73A49">=></span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">              &#x3C;</span><span style="color:#005CC5">LandscapeStill</span><span style="color:#6F42C1"> key</span><span style="color:#D73A49">=</span><span style="color:#24292E">{still.title} {</span><span style="color:#D73A49">...</span><span style="color:#24292E">still} </span><span style="color:#6F42C1">variant</span><span style="color:#D73A49">=</span><span style="color:#032F62">"tall"</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">            ))}</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#005CC5">MarqueeWell</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">    );</span></span>
+<span class="line"><span style="color:#24292E">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#22863A">div</span></span>
+<span class="line"><span style="color:#6F42C1">      className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span></span>
+<span class="line"><span style="color:#032F62">        "flex justify-evenly md:grid h-full min-h-[18rem] md:grid-cols-2 gap-2 sm:gap-4"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">        className,</span></span>
+<span class="line"><span style="color:#24292E">      )}</span></span>
+<span class="line"><span style="color:#24292E">    ></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#005CC5">MarqueeWell</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"h-full min-h-0 max-w-fit"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#005CC5">StillMarqueeColumn</span></span>
+<span class="line"><span style="color:#6F42C1">          stills</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#005CC5">STILLS_LEFT</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#6F42C1">          duration</span><span style="color:#D73A49">=</span><span style="color:#032F62">"[--duration:32s] [--gap:12px]"</span></span>
+<span class="line"><span style="color:#6F42C1">          variant</span><span style="color:#D73A49">=</span><span style="color:#032F62">"wide"</span></span>
+<span class="line"><span style="color:#24292E">        /></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#005CC5">MarqueeWell</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#005CC5">MarqueeWell</span><span style="color:#6F42C1"> tone</span><span style="color:#D73A49">=</span><span style="color:#032F62">"amber"</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"h-full min-h-0 max-w-fit"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#005CC5">StillMarqueeColumn</span></span>
+<span class="line"><span style="color:#6F42C1">          stills</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#005CC5">STILLS_RIGHT</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#6F42C1">          reverse</span></span>
+<span class="line"><span style="color:#6F42C1">          duration</span><span style="color:#D73A49">=</span><span style="color:#032F62">"[--duration:38s] [--gap:12px]"</span></span>
+<span class="line"><span style="color:#6F42C1">          variant</span><span style="color:#D73A49">=</span><span style="color:#032F62">"tall"</span></span>
+<span class="line"><span style="color:#24292E">        /></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#005CC5">MarqueeWell</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> PremieresSection</span><span style="color:#24292E">({ </span><span style="color:#E36209">reducedMotion</span><span style="color:#24292E"> }</span><span style="color:#D73A49">:</span><span style="color:#24292E"> { </span><span style="color:#E36209">reducedMotion</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> boolean</span><span style="color:#24292E"> }) {</span></span>
+<span class="line"><span style="color:#D73A49">  const</span><span style="color:#005CC5"> delays</span><span style="color:#D73A49"> =</span><span style="color:#6F42C1"> heroSequenceDelays</span><span style="color:#24292E">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#22863A">section</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"pb-6 pt-8"</span><span style="color:#6F42C1"> aria-labelledby</span><span style="color:#D73A49">=</span><span style="color:#032F62">"premieres-heading"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#005CC5">CinemaContent</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"mb-4 flex items-end justify-between gap-4"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">h2</span></span>
+<span class="line"><span style="color:#6F42C1">          id</span><span style="color:#D73A49">=</span><span style="color:#032F62">"premieres-heading"</span></span>
+<span class="line"><span style="color:#6F42C1">          className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span></span>
+<span class="line"><span style="color:#032F62">            "text-[22px] font-semibold tracking-[-0.02em]"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#D73A49">            !</span><span style="color:#24292E">reducedMotion </span><span style="color:#D73A49">&#x26;&#x26;</span><span style="color:#032F62"> "cinema-hero-rise"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">          )}</span></span>
+<span class="line"><span style="color:#6F42C1">          style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{reducedMotion </span><span style="color:#D73A49">?</span><span style="color:#005CC5"> undefined</span><span style="color:#D73A49"> :</span><span style="color:#24292E"> { animationDelay: </span><span style="color:#032F62">\`\${</span><span style="color:#24292E">delays</span><span style="color:#032F62">.</span><span style="color:#24292E">premieresLabel</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E"> }}</span></span>
+<span class="line"><span style="color:#24292E">        ></span></span>
+<span class="line"><span style="color:#24292E">          Premieres</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">h2</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">span</span></span>
+<span class="line"><span style="color:#6F42C1">          className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span><span style="color:#032F62">"text-[13px] text-white/38"</span><span style="color:#24292E">, </span><span style="color:#D73A49">!</span><span style="color:#24292E">reducedMotion </span><span style="color:#D73A49">&#x26;&#x26;</span><span style="color:#032F62"> "cinema-hero-rise"</span><span style="color:#24292E">)}</span></span>
+<span class="line"><span style="color:#6F42C1">          style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{reducedMotion </span><span style="color:#D73A49">?</span><span style="color:#005CC5"> undefined</span><span style="color:#D73A49"> :</span><span style="color:#24292E"> { animationDelay: </span><span style="color:#032F62">\`\${</span><span style="color:#24292E">delays</span><span style="color:#032F62">.</span><span style="color:#24292E">premieresMeta</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E"> }}</span></span>
+<span class="line"><span style="color:#24292E">        ></span></span>
+<span class="line"><span style="color:#24292E">          Now playing</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">span</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#005CC5">CinemaContent</span><span style="color:#24292E">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">div</span></span>
+<span class="line"><span style="color:#6F42C1">        className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span><span style="color:#D73A49">!</span><span style="color:#24292E">reducedMotion </span><span style="color:#D73A49">&#x26;&#x26;</span><span style="color:#032F62"> "cinema-hero-rise"</span><span style="color:#24292E">)}</span></span>
+<span class="line"><span style="color:#6F42C1">        style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{reducedMotion </span><span style="color:#D73A49">?</span><span style="color:#005CC5"> undefined</span><span style="color:#D73A49"> :</span><span style="color:#24292E"> { animationDelay: </span><span style="color:#032F62">\`\${</span><span style="color:#24292E">delays</span><span style="color:#032F62">.</span><span style="color:#24292E">premieresRail</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E"> }}</span></span>
+<span class="line"><span style="color:#24292E">      ></span></span>
+<span class="line"><span style="color:#24292E">        {reducedMotion </span><span style="color:#D73A49">?</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#005CC5">CinemaContent</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"overflow-x-auto overscroll-x-contain pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&#x26;::-webkit-scrollbar]:hidden"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">            &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"flex w-max gap-4 sm:gap-5"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">              {</span><span style="color:#005CC5">PREMIERES</span><span style="color:#24292E">.</span><span style="color:#6F42C1">map</span><span style="color:#24292E">((</span><span style="color:#E36209">film</span><span style="color:#24292E">) </span><span style="color:#D73A49">=></span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">                &#x3C;</span><span style="color:#005CC5">PosterCard</span><span style="color:#6F42C1"> key</span><span style="color:#D73A49">=</span><span style="color:#24292E">{film.title} {</span><span style="color:#D73A49">...</span><span style="color:#24292E">film} /></span></span>
+<span class="line"><span style="color:#24292E">              ))}</span></span>
+<span class="line"><span style="color:#24292E">            &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#005CC5">CinemaContent</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        ) </span><span style="color:#D73A49">:</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">            &#x3C;</span><span style="color:#005CC5">Marquee</span></span>
+<span class="line"><span style="color:#6F42C1">              pauseOnHover</span></span>
+<span class="line"><span style="color:#6F42C1">              applyMask</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#005CC5">false</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#6F42C1">              className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"py-1 pl-5 [--duration:38s] [--gap:1rem] sm:pl-8 sm:[--gap:1.25rem]"</span></span>
+<span class="line"><span style="color:#24292E">            ></span></span>
+<span class="line"><span style="color:#24292E">              {</span><span style="color:#005CC5">PREMIERES</span><span style="color:#24292E">.</span><span style="color:#6F42C1">map</span><span style="color:#24292E">((</span><span style="color:#E36209">film</span><span style="color:#24292E">) </span><span style="color:#D73A49">=></span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">                &#x3C;</span><span style="color:#005CC5">PosterCard</span><span style="color:#6F42C1"> key</span><span style="color:#D73A49">=</span><span style="color:#24292E">{film.title} {</span><span style="color:#D73A49">...</span><span style="color:#24292E">film} /></span></span>
+<span class="line"><span style="color:#24292E">              ))}</span></span>
+<span class="line"><span style="color:#24292E">            &#x3C;/</span><span style="color:#005CC5">Marquee</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        )}</span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/</span><span style="color:#22863A">section</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> HeroPremiereCopy</span><span style="color:#24292E">({ </span><span style="color:#E36209">reducedMotion</span><span style="color:#24292E"> }</span><span style="color:#D73A49">:</span><span style="color:#24292E"> { </span><span style="color:#E36209">reducedMotion</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> boolean</span><span style="color:#24292E"> }) {</span></span>
+<span class="line"><span style="color:#D73A49">  const</span><span style="color:#005CC5"> delays</span><span style="color:#D73A49"> =</span><span style="color:#6F42C1"> heroSequenceDelays</span><span style="color:#24292E">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">  if</span><span style="color:#24292E"> (reducedMotion) {</span></span>
+<span class="line"><span style="color:#D73A49">    return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">p</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"text-[13px] font-medium tracking-[0.08em] text-white/45 uppercase"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          {</span><span style="color:#005CC5">FEATURED</span><span style="color:#24292E">.eyebrow}</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">h1</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"mt-3 max-w-[11ch] -translate-x-[0.13ex] text-balance text-[clamp(3.25rem,14vw,7.5rem)] leading-[0.9] font-semibold tracking-[-0.045em]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          {</span><span style="color:#005CC5">FEATURED</span><span style="color:#24292E">.title}</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">h1</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">p</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"mt-5 max-w-[28ch] text-[17px] leading-snug text-white/58 sm:text-[19px]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          {</span><span style="color:#005CC5">FEATURED</span><span style="color:#24292E">.tagline}</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">p</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"mt-3 text-[13px] text-white/38"</span><span style="color:#24292E">>{</span><span style="color:#005CC5">FEATURED</span><span style="color:#24292E">.runtime}&#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"mt-8 flex flex-wrap items-center gap-3"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">button</span></span>
+<span class="line"><span style="color:#6F42C1">            type</span><span style="color:#D73A49">=</span><span style="color:#032F62">"button"</span></span>
+<span class="line"><span style="color:#6F42C1">            className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"inline-flex h-11 touch-manipulation items-center gap-2 rounded-full bg-white px-6 text-[14px] font-semibold text-black transition-transform active:scale-[0.98]"</span></span>
+<span class="line"><span style="color:#24292E">          ></span></span>
+<span class="line"><span style="color:#24292E">            &#x3C;</span><span style="color:#005CC5">PlayIcon</span><span style="color:#6F42C1"> aria-hidden</span><span style="color:#D73A49">=</span><span style="color:#032F62">"true"</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"size-4 fill-current"</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">            Play</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#22863A">button</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">button</span></span>
+<span class="line"><span style="color:#6F42C1">            type</span><span style="color:#D73A49">=</span><span style="color:#032F62">"button"</span></span>
+<span class="line"><span style="color:#6F42C1">            className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"inline-flex h-11 touch-manipulation items-center justify-center rounded-full border border-white/18 bg-white/[0.04] px-6 text-[14px] font-medium text-white/78 transition-colors hover:bg-white/[0.08] active:scale-[0.98]"</span></span>
+<span class="line"><span style="color:#24292E">          ></span></span>
+<span class="line"><span style="color:#24292E">            Add to Up Next</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#22863A">button</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/></span></span>
+<span class="line"><span style="color:#24292E">    );</span></span>
+<span class="line"><span style="color:#24292E">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">p</span></span>
+<span class="line"><span style="color:#6F42C1">        className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"cinema-hero-rise text-[13px] font-medium tracking-[0.08em] text-white/45 uppercase"</span></span>
+<span class="line"><span style="color:#6F42C1">        style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{{ animationDelay: </span><span style="color:#032F62">\`\${</span><span style="color:#24292E">delays</span><span style="color:#032F62">.</span><span style="color:#24292E">eyebrow</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E"> }}</span></span>
+<span class="line"><span style="color:#24292E">      ></span></span>
+<span class="line"><span style="color:#24292E">        {</span><span style="color:#005CC5">FEATURED</span><span style="color:#24292E">.eyebrow}</span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">h1</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"mt-3 text-balance leading-[0.9]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#005CC5">WaveReveal</span></span>
+<span class="line"><span style="color:#6F42C1">          text</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#005CC5">FEATURED</span><span style="color:#24292E">.title}</span></span>
+<span class="line"><span style="color:#6F42C1">          mode</span><span style="color:#D73A49">=</span><span style="color:#032F62">"word"</span></span>
+<span class="line"><span style="color:#6F42C1">          direction</span><span style="color:#D73A49">=</span><span style="color:#032F62">"up"</span></span>
+<span class="line"><span style="color:#6F42C1">          blur</span></span>
+<span class="line"><span style="color:#6F42C1">          duration</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#032F62">\`\${</span><span style="color:#005CC5">HERO_WORD_DURATION_MS</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#6F42C1">          delay</span><span style="color:#D73A49">=</span><span style="color:#24292E">{delays.title}</span></span>
+<span class="line"><span style="color:#6F42C1">          className</span><span style="color:#D73A49">=</span><span style="color:#032F62">" -translate-x-[0.13ex] justify-start px-0 text-left font-semibold tracking-[-0.02em] text-[clamp(3.25rem,14vw,7.5rem)] md:px-0 md:text-[clamp(3.25rem,14vw,7.5rem)]"</span></span>
+<span class="line"><span style="color:#24292E">        /></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">h1</span><span style="color:#24292E">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">p</span></span>
+<span class="line"><span style="color:#6F42C1">        className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"cinema-hero-rise mt-5 max-w-[28ch] text-[17px] leading-snug text-white/58 sm:text-[19px]"</span></span>
+<span class="line"><span style="color:#6F42C1">        style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{{ animationDelay: </span><span style="color:#032F62">\`\${</span><span style="color:#24292E">delays</span><span style="color:#032F62">.</span><span style="color:#24292E">tagline</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E"> }}</span></span>
+<span class="line"><span style="color:#24292E">      ></span></span>
+<span class="line"><span style="color:#24292E">        {</span><span style="color:#005CC5">FEATURED</span><span style="color:#24292E">.tagline}</span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">p</span></span>
+<span class="line"><span style="color:#6F42C1">        className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"cinema-hero-rise mt-3 text-[13px] text-white/38"</span></span>
+<span class="line"><span style="color:#6F42C1">        style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{{ animationDelay: </span><span style="color:#032F62">\`\${</span><span style="color:#24292E">delays</span><span style="color:#032F62">.</span><span style="color:#24292E">runtime</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E"> }}</span></span>
+<span class="line"><span style="color:#24292E">      ></span></span>
+<span class="line"><span style="color:#24292E">        {</span><span style="color:#005CC5">FEATURED</span><span style="color:#24292E">.runtime}</span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"mt-8 flex flex-wrap items-center gap-3"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">button</span></span>
+<span class="line"><span style="color:#6F42C1">          type</span><span style="color:#D73A49">=</span><span style="color:#032F62">"button"</span></span>
+<span class="line"><span style="color:#6F42C1">          className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"cinema-hero-rise inline-flex h-11 touch-manipulation items-center gap-2 rounded-full bg-white px-6 text-[14px] font-semibold text-black transition-transform active:scale-[0.98]"</span></span>
+<span class="line"><span style="color:#6F42C1">          style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{{ animationDelay: </span><span style="color:#032F62">\`\${</span><span style="color:#24292E">delays</span><span style="color:#032F62">.</span><span style="color:#24292E">ctaPrimary</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E"> }}</span></span>
+<span class="line"><span style="color:#24292E">        ></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#005CC5">PlayIcon</span><span style="color:#6F42C1"> aria-hidden</span><span style="color:#D73A49">=</span><span style="color:#032F62">"true"</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"size-4 fill-current"</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">          Play</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">button</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">button</span></span>
+<span class="line"><span style="color:#6F42C1">          type</span><span style="color:#D73A49">=</span><span style="color:#032F62">"button"</span></span>
+<span class="line"><span style="color:#6F42C1">          className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"cinema-hero-rise inline-flex h-11 touch-manipulation items-center justify-center rounded-full border border-white/18 bg-white/[0.04] px-6 text-[14px] font-medium text-white/78 transition-colors hover:bg-white/[0.08] active:scale-[0.98]"</span></span>
+<span class="line"><span style="color:#6F42C1">          style</span><span style="color:#D73A49">=</span><span style="color:#24292E">{{ animationDelay: </span><span style="color:#032F62">\`\${</span><span style="color:#24292E">delays</span><span style="color:#032F62">.</span><span style="color:#24292E">ctaSecondary</span><span style="color:#032F62">}ms\`</span><span style="color:#24292E"> }}</span></span>
+<span class="line"><span style="color:#24292E">        ></span></span>
+<span class="line"><span style="color:#24292E">          Add to Up Next</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">button</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">function</span><span style="color:#6F42C1"> CraftFeaturePanel</span><span style="color:#24292E">({ </span><span style="color:#E36209">reducedMotion</span><span style="color:#24292E"> }</span><span style="color:#D73A49">:</span><span style="color:#24292E"> { </span><span style="color:#E36209">reducedMotion</span><span style="color:#D73A49">:</span><span style="color:#005CC5"> boolean</span><span style="color:#24292E"> }) {</span></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"@container overflow-hidden rounded-[1.35rem] border border-white/10 bg-[oklch(0.12_0.025_285)] shadow-[inset_0_1px_0_oklch(1_0_0/0.05)]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"grid md:grid-cols-[1fr_auto]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"flex flex-col justify-end gap-3 border-b border-white/8 p-5 sm:p-6 md:border-r md:border-b-0 md:p-6 lg:p-8"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">p</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"text-[13px] font-medium tracking-[0.08em] text-white/42 uppercase"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">            The craft</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">h2</span></span>
+<span class="line"><span style="color:#6F42C1">            id</span><span style="color:#D73A49">=</span><span style="color:#032F62">"editorial-heading"</span></span>
+<span class="line"><span style="color:#6F42C1">            className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"text-balance text-[clamp(1.5rem,4.5cqi,2.25rem)] leading-[1.08] font-semibold tracking-[-0.03em]"</span></span>
+<span class="line"><span style="color:#24292E">          ></span></span>
+<span class="line"><span style="color:#24292E">            Built for the big screen. Fine on your couch.</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#22863A">h2</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">p</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"text-[14px] leading-relaxed text-white/52 sm:text-[15px]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">            Hero, poster row, two still columns — same page, different speeds.</span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#22863A">p</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"max-h-[18rem] px-4x"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#005CC5">VerticalStillGallery</span><span style="color:#6F42C1"> reducedMotion</span><span style="color:#D73A49">=</span><span style="color:#24292E">{reducedMotion} </span><span style="color:#6F42C1">className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"h-full"</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">export</span><span style="color:#D73A49"> default</span><span style="color:#D73A49"> function</span><span style="color:#6F42C1"> CinemaRow</span><span style="color:#24292E">() {</span></span>
+<span class="line"><span style="color:#D73A49">  const</span><span style="color:#24292E"> [</span><span style="color:#005CC5">reducedMotion</span><span style="color:#24292E">, </span><span style="color:#005CC5">setReducedMotion</span><span style="color:#24292E">] </span><span style="color:#D73A49">=</span><span style="color:#6F42C1"> useState</span><span style="color:#24292E">(</span><span style="color:#005CC5">false</span><span style="color:#24292E">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6F42C1">  useEffect</span><span style="color:#24292E">(() </span><span style="color:#D73A49">=></span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#D73A49">    const</span><span style="color:#005CC5"> mq</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> window.</span><span style="color:#6F42C1">matchMedia</span><span style="color:#24292E">(</span><span style="color:#032F62">"(prefers-reduced-motion: reduce)"</span><span style="color:#24292E">);</span></span>
+<span class="line"><span style="color:#D73A49">    const</span><span style="color:#6F42C1"> apply</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> () </span><span style="color:#D73A49">=></span><span style="color:#6F42C1"> setReducedMotion</span><span style="color:#24292E">(mq.matches);</span></span>
+<span class="line"><span style="color:#6F42C1">    apply</span><span style="color:#24292E">();</span></span>
+<span class="line"><span style="color:#24292E">    mq.</span><span style="color:#6F42C1">addEventListener</span><span style="color:#24292E">(</span><span style="color:#032F62">"change"</span><span style="color:#24292E">, apply);</span></span>
+<span class="line"><span style="color:#D73A49">    return</span><span style="color:#24292E"> () </span><span style="color:#D73A49">=></span><span style="color:#24292E"> mq.</span><span style="color:#6F42C1">removeEventListener</span><span style="color:#24292E">(</span><span style="color:#032F62">"change"</span><span style="color:#24292E">, apply);</span></span>
+<span class="line"><span style="color:#24292E">  }, []);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#005CC5">CinemaEntranceStyles</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#22863A">div</span></span>
+<span class="line"><span style="color:#6F42C1">        className</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#6F42C1">cn</span><span style="color:#24292E">(</span></span>
+<span class="line"><span style="color:#24292E">          sans.variable,</span></span>
+<span class="line"><span style="color:#24292E">          sans.className,</span></span>
+<span class="line"><span style="color:#032F62">          "min-h-svh bg-black text-white selection:bg-white/20"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#24292E">        )}</span></span>
+<span class="line"><span style="color:#24292E">      ></span></span>
+<span class="line"><span style="color:#24292E">        {</span><span style="color:#6A737D">/* Hero — backdrop marquee + premiere type */</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">section</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"relative isolate overflow-hidden"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">div</span></span>
+<span class="line"><span style="color:#6F42C1">            aria-hidden</span><span style="color:#D73A49">=</span><span style="color:#032F62">"true"</span></span>
+<span class="line"><span style="color:#6F42C1">            className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,oklch(0.28_0.08_280_/_0.55)_0%,transparent_58%),linear-gradient(to_bottom,oklch(0.12_0.02_280)_0%,black_72%)]"</span></span>
+<span class="line"><span style="color:#24292E">          /></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#22863A">div</span></span>
+<span class="line"><span style="color:#6F42C1">            aria-hidden</span><span style="color:#D73A49">=</span><span style="color:#032F62">"true"</span></span>
+<span class="line"><span style="color:#6F42C1">            className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black to-transparent"</span></span>
+<span class="line"><span style="color:#24292E">          /></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#005CC5">CinemaContent</span><span style="color:#6F42C1"> className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"relative z-10 flex min-h-[min(88svh,920px)] flex-col justify-end pb-[calc(var(--demo-chrome-reserve,5rem)+2.5rem)] pt-[max(1.25rem,env(safe-area-inset-top))]"</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">            &#x3C;</span><span style="color:#005CC5">HeroPremiereCopy</span><span style="color:#6F42C1"> reducedMotion</span><span style="color:#D73A49">=</span><span style="color:#24292E">{reducedMotion} /></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#005CC5">CinemaContent</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">section</span><span style="color:#24292E">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#005CC5">PremieresSection</span><span style="color:#6F42C1"> reducedMotion</span><span style="color:#D73A49">=</span><span style="color:#24292E">{reducedMotion} /></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">        {</span><span style="color:#6A737D">/* Editorial + opposing vertical still marquees */</span><span style="color:#24292E">}</span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;</span><span style="color:#22863A">section</span></span>
+<span class="line"><span style="color:#6F42C1">          className</span><span style="color:#D73A49">=</span><span style="color:#032F62">"border-t border-white/[0.06] py-16 sm:py-24"</span></span>
+<span class="line"><span style="color:#6F42C1">          aria-labelledby</span><span style="color:#D73A49">=</span><span style="color:#032F62">"editorial-heading"</span></span>
+<span class="line"><span style="color:#24292E">        ></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;</span><span style="color:#005CC5">CinemaContent</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">            &#x3C;</span><span style="color:#005CC5">CraftFeaturePanel</span><span style="color:#6F42C1"> reducedMotion</span><span style="color:#D73A49">=</span><span style="color:#24292E">{reducedMotion} /></span></span>
+<span class="line"><span style="color:#24292E">          &#x3C;/</span><span style="color:#005CC5">CinemaContent</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">        &#x3C;/</span><span style="color:#22863A">section</span><span style="color:#24292E">></span></span>
+<span class="line"><span style="color:#24292E">      &#x3C;/</span><span style="color:#22863A">div</span><span style="color:#24292E">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">      &#x3C;</span><span style="color:#005CC5">CinemaRowNotes</span><span style="color:#24292E"> /></span></span>
+<span class="line"><span style="color:#24292E">    &#x3C;/></span></span>
+<span class="line"><span style="color:#24292E">  );</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span></code></pre>`,
+      htmlDark: `<pre class="shiki github-dark" tabindex="0"><code><span class="line"><span style="color:#9ECBFF">"use client"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { PlayIcon } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "lucide-react"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { IBM_Plex_Sans } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "next/font/google"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { useEffect, useState } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "react"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Marquee </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "@/animata/container/marquee"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> WaveReveal </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "@/animata/text/wave-reveal"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { cn } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "@/lib/utils"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { CinemaRowNotes } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "./cinema-row-notes"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> sans</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> IBM_Plex_Sans</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  subsets: [</span><span style="color:#9ECBFF">"latin"</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#E1E4E8">  weight: [</span><span style="color:#9ECBFF">"400"</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">"500"</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">"600"</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#E1E4E8">  variable: </span><span style="color:#9ECBFF">"--font-sans"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  display: </span><span style="color:#9ECBFF">"swap"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#B392F0"> TMDB_POSTER</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">path</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#9ECBFF"> \`https://media.themoviedb.org/t/p/w500\${</span><span style="color:#E1E4E8">path</span><span style="color:#9ECBFF">}\`</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#B392F0"> TMDB_BACKDROP</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">path</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#9ECBFF"> \`https://media.themoviedb.org/t/p/w780\${</span><span style="color:#E1E4E8">path</span><span style="color:#9ECBFF">}\`</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> FEATURED</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  eyebrow: </span><span style="color:#9ECBFF">"Now streaming"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  title: </span><span style="color:#9ECBFF">"Dune: Part Two"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  tagline: </span><span style="color:#9ECBFF">"Paul goes back to Arrakis. The desert hasn't forgotten him."</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  runtime: </span><span style="color:#9ECBFF">"2h 47m · Sci‑Fi"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  backdrop: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/eZ239CUp1d6OryZEBPnO2n87gMG.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> HERO_TITLE_WORDS</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> FEATURED</span><span style="color:#E1E4E8">.title.</span><span style="color:#B392F0">trim</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">split</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">/</span><span style="color:#79B8FF">\\s</span><span style="color:#F97583">+</span><span style="color:#9ECBFF">/</span><span style="color:#E1E4E8">).</span><span style="color:#79B8FF">length</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> HERO_TITLE_DELAY_MS</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 100</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> HERO_WORD_STAGGER_MS</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 50</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> HERO_WORD_DURATION_MS</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 700</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> HERO_ITEM_DURATION_MS</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 580</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> heroSequenceDelays</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> titleEnd</span><span style="color:#F97583"> =</span></span>
+<span class="line"><span style="color:#79B8FF">    HERO_TITLE_DELAY_MS</span><span style="color:#F97583"> +</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">HERO_TITLE_WORDS</span><span style="color:#F97583"> -</span><span style="color:#79B8FF"> 1</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">*</span><span style="color:#79B8FF"> HERO_WORD_STAGGER_MS</span><span style="color:#F97583"> +</span><span style="color:#79B8FF"> HERO_WORD_DURATION_MS</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> ctaPrimary</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> titleEnd </span><span style="color:#F97583">+</span><span style="color:#79B8FF"> 120</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> ctaSecondary</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> titleEnd </span><span style="color:#F97583">+</span><span style="color:#79B8FF"> 220</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">    eyebrow: </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#79B8FF">HERO_TITLE_DELAY_MS</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    tagline: titleEnd </span><span style="color:#F97583">-</span><span style="color:#79B8FF"> 220</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    runtime: titleEnd </span><span style="color:#F97583">-</span><span style="color:#79B8FF"> 40</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    ctaPrimary,</span></span>
+<span class="line"><span style="color:#E1E4E8">    ctaSecondary,</span></span>
+<span class="line"><span style="color:#E1E4E8">    premieresLabel: ctaSecondary </span><span style="color:#F97583">+</span><span style="color:#79B8FF"> 140</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    premieresMeta: ctaSecondary </span><span style="color:#F97583">+</span><span style="color:#79B8FF"> 220</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    premieresRail: ctaSecondary </span><span style="color:#F97583">+</span><span style="color:#79B8FF"> 260</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  };</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> CinemaEntranceStyles</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">style</span><span style="color:#E1E4E8">>{</span><span style="color:#9ECBFF">\`</span></span>
+<span class="line"><span style="color:#9ECBFF">      @keyframes cinema-hero-rise {</span></span>
+<span class="line"><span style="color:#9ECBFF">        from {</span></span>
+<span class="line"><span style="color:#9ECBFF">          opacity: 0;</span></span>
+<span class="line"><span style="color:#9ECBFF">          transform: translateY(14px);</span></span>
+<span class="line"><span style="color:#9ECBFF">          filter: blur(8px);</span></span>
+<span class="line"><span style="color:#9ECBFF">        }</span></span>
+<span class="line"><span style="color:#9ECBFF">        to {</span></span>
+<span class="line"><span style="color:#9ECBFF">          opacity: 1;</span></span>
+<span class="line"><span style="color:#9ECBFF">          transform: translateY(0);</span></span>
+<span class="line"><span style="color:#9ECBFF">          filter: blur(0);</span></span>
+<span class="line"><span style="color:#9ECBFF">        }</span></span>
+<span class="line"><span style="color:#9ECBFF">      }</span></span>
+<span class="line"><span style="color:#9ECBFF">      .cinema-hero-rise {</span></span>
+<span class="line"><span style="color:#9ECBFF">        animation: cinema-hero-rise \${</span><span style="color:#79B8FF">HERO_ITEM_DURATION_MS</span><span style="color:#9ECBFF">}ms cubic-bezier(0.22, 1, 0.36, 1) both;</span></span>
+<span class="line"><span style="color:#9ECBFF">      }</span></span>
+<span class="line"><span style="color:#9ECBFF">    \`</span><span style="color:#E1E4E8">}&#x3C;/</span><span style="color:#85E89D">style</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> HERO_BACKDROPS</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> [</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Dune: Part Two"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/eZ239CUp1d6OryZEBPnO2n87gMG.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Sinners"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/nAxGnGHOsfzufThz20zgmRwKur3.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Oppenheimer"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/neeNHeXjMF5fXoCJRsOmkNGC7q.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Blade Runner 2049"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/mVr0UiqyltcfqxbAUcLl9zWL8ah.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Interstellar"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/5XNQBqnBwPA9yT0jZ0p3s8bbLh0.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Mad Max: Fury Road"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/uT895WNwm0aIJRtGizcQhrejWUo.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Parasite"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/TU9NIjwzjoKPwQHoHshkFcQUCG.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Spider-Verse"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/9xfDWXAUbFXQK585JvByT5pEAhe.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">] </span><span style="color:#F97583">as</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> STILLS_LEFT</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> [</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Anora"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/qvyOfwTC3qdbzkqdXWSSEMHtjBZ.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Challengers"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/tq8COKsI99Bivjd4CZIYVGoKcIx.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"The Substance"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/8ODNt5olCeIqBYTP3GgXEQYTfeX.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Everything Everywhere"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/ss0Os3uWJfQAENILHZUdX8Tt1OC.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Poor Things"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/zh6IdheEYinU4TPtorWsjx6qPQE.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"The Batman"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/rvtdN5XkWAfGX6xDuPL6yYS2seK.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">] </span><span style="color:#F97583">as</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> STILLS_RIGHT</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> [</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Top Gun: Maverick"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/AaV1YIdWKnjAIAOe8UUKBFm327v.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Banshees of Inisherin"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/1vXD5HXqkhvsXFHE7KmCPZGPR1e.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Sinners"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/nAxGnGHOsfzufThz20zgmRwKur3.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Oppenheimer"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/neeNHeXjMF5fXoCJRsOmkNGC7q.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Interstellar"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/5XNQBqnBwPA9yT0jZ0p3s8bbLh0.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Mad Max: Fury Road"</span><span style="color:#E1E4E8">, image: </span><span style="color:#B392F0">TMDB_BACKDROP</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/uT895WNwm0aIJRtGizcQhrejWUo.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">] </span><span style="color:#F97583">as</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> PREMIERES</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> [</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Sinners"</span><span style="color:#E1E4E8">, genre: </span><span style="color:#9ECBFF">"Horror"</span><span style="color:#E1E4E8">, poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Anora"</span><span style="color:#E1E4E8">, genre: </span><span style="color:#9ECBFF">"Drama"</span><span style="color:#E1E4E8">, poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/oN0o3owobFjePDc5vMdLRAd0jkd.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Challengers"</span><span style="color:#E1E4E8">, genre: </span><span style="color:#9ECBFF">"Drama"</span><span style="color:#E1E4E8">, poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/H6vke7zGiuLsz4v4RPeReb9rsv.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#9ECBFF">"The Substance"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    genre: </span><span style="color:#9ECBFF">"Horror"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/lqoMzCcZYEFK729d6qzt349fB4o.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#9ECBFF">"Oppenheimer"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    genre: </span><span style="color:#9ECBFF">"Biography"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#9ECBFF">"Everything Everywhere All at Once"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    genre: </span><span style="color:#9ECBFF">"Sci‑Fi"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/u68AjlvlutfEIcpmbYpKcdi09ut.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  { title: </span><span style="color:#9ECBFF">"Parasite"</span><span style="color:#E1E4E8">, genre: </span><span style="color:#9ECBFF">"Thriller"</span><span style="color:#E1E4E8">, poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg"</span><span style="color:#E1E4E8">) },</span></span>
+<span class="line"><span style="color:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#9ECBFF">"Spider-Man: Across the Spider-Verse"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    genre: </span><span style="color:#9ECBFF">"Animation"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#9ECBFF">"Blade Runner 2049"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    genre: </span><span style="color:#9ECBFF">"Sci‑Fi"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#9ECBFF">"Interstellar"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    genre: </span><span style="color:#9ECBFF">"Sci‑Fi"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#9ECBFF">"Poor Things"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    genre: </span><span style="color:#9ECBFF">"Comedy"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#E1E4E8">    title: </span><span style="color:#9ECBFF">"Mad Max: Fury Road"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    genre: </span><span style="color:#9ECBFF">"Action"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    poster: </span><span style="color:#B392F0">TMDB_POSTER</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/hA2ple9q4qnwxp3hKVNhroipsir.jpg"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">] </span><span style="color:#F97583">as</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> CinemaContent</span><span style="color:#E1E4E8">({ </span><span style="color:#FFAB70">className</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">children</span><span style="color:#E1E4E8"> }</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">className</span><span style="color:#F97583">?:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">; </span><span style="color:#FFAB70">children</span><span style="color:#F97583">:</span><span style="color:#B392F0"> React</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">ReactNode</span><span style="color:#E1E4E8"> }) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"mx-auto w-full max-w-6xl px-5 sm:px-8"</span><span style="color:#E1E4E8">, className)}>{children}&#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">>;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> BackdropSlide</span><span style="color:#E1E4E8">({ </span><span style="color:#FFAB70">title</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">image</span><span style="color:#E1E4E8"> }</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">title</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">; </span><span style="color:#FFAB70">image</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8"> }) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"relative h-[min(88svh,920px)] w-[clamp(14rem,42vw,36rem)] shrink-0 overflow-hidden"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">img</span><span style="color:#B392F0"> src</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{image} </span><span style="color:#B392F0">alt</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">""</span><span style="color:#B392F0"> aria-hidden</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"true"</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"h-full w-full object-cover"</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">span</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"sr-only"</span><span style="color:#E1E4E8">>{title}&#x3C;/</span><span style="color:#85E89D">span</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> LandscapeStill</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#FFAB70">  title</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">  image</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">  variant</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> "wide"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#FFAB70">  title</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#FFAB70">  image</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#FFAB70">  variant</span><span style="color:#F97583">?:</span><span style="color:#9ECBFF"> "wide"</span><span style="color:#F97583"> |</span><span style="color:#9ECBFF"> "tall"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">figure</span></span>
+<span class="line"><span style="color:#B392F0">      className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#9ECBFF">        "group relative w-full max-w-48 shrink-0 overflow-hidden"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">        variant </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "tall"</span><span style="color:#F97583"> ?</span><span style="color:#9ECBFF"> "aspect-[5/3]"</span><span style="color:#F97583"> :</span><span style="color:#9ECBFF"> "aspect-video"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">      )}</span></span>
+<span class="line"><span style="color:#E1E4E8">    ></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">img</span></span>
+<span class="line"><span style="color:#B392F0">        src</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{image}</span></span>
+<span class="line"><span style="color:#B392F0">        alt</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">title</span><span style="color:#9ECBFF">} still\`</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#B392F0">        loading</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"lazy"</span></span>
+<span class="line"><span style="color:#B392F0">        decoding</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"async"</span></span>
+<span class="line"><span style="color:#B392F0">        className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"</span></span>
+<span class="line"><span style="color:#E1E4E8">      /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"pointer-events-none absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent"</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">figcaption</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"absolute inset-x-0 bottom-0 truncate px-3 pb-2.5 text-[11px] font-semibold tracking-[0.06em] text-white/88 uppercase"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        {title}</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">figcaption</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#85E89D">figure</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> PosterCard</span><span style="color:#E1E4E8">({ </span><span style="color:#FFAB70">title</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">genre</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">poster</span><span style="color:#E1E4E8"> }</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">title</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">; </span><span style="color:#FFAB70">genre</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">; </span><span style="color:#FFAB70">poster</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8"> }) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">article</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"w-[9.75rem] shrink-0 sm:w-[11.25rem]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"aspect-[2/3] overflow-hidden rounded-xl ring-1 ring-white/10"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">img</span></span>
+<span class="line"><span style="color:#B392F0">          src</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{poster}</span></span>
+<span class="line"><span style="color:#B392F0">          alt</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">title</span><span style="color:#9ECBFF">} poster\`</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#B392F0">          loading</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"lazy"</span></span>
+<span class="line"><span style="color:#B392F0">          decoding</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"async"</span></span>
+<span class="line"><span style="color:#B392F0">          className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"h-full w-full object-cover"</span></span>
+<span class="line"><span style="color:#E1E4E8">        /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">h3</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"mt-2.5 truncate text-[15px] font-medium text-white/92"</span><span style="color:#E1E4E8">>{title}&#x3C;/</span><span style="color:#85E89D">h3</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">p</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"text-[13px] text-white/42"</span><span style="color:#E1E4E8">>{genre}&#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#85E89D">article</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> MarqueeWell</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#FFAB70">  children</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">  className</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">  tone</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> "violet"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#FFAB70">  children</span><span style="color:#F97583">:</span><span style="color:#B392F0"> React</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">ReactNode</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#FFAB70">  className</span><span style="color:#F97583">?:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#FFAB70">  tone</span><span style="color:#F97583">?:</span><span style="color:#9ECBFF"> "violet"</span><span style="color:#F97583"> |</span><span style="color:#9ECBFF"> "amber"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> wellColor</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> tone </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "violet"</span><span style="color:#F97583"> ?</span><span style="color:#9ECBFF"> "oklch(0.14 0.03 285)"</span><span style="color:#F97583"> :</span><span style="color:#9ECBFF"> "oklch(0.15 0.028 55)"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">div</span></span>
+<span class="line"><span style="color:#B392F0">      className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"relative min-h-[18rem] overflow-hidden"</span><span style="color:#E1E4E8">, className)}</span></span>
+<span class="line"><span style="color:#B392F0">      style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{{ backgroundColor: wellColor }}</span></span>
+<span class="line"><span style="color:#E1E4E8">    ></span></span>
+<span class="line"><span style="color:#E1E4E8">      {children}</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> StillMarqueeColumn</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#FFAB70">  stills</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">  reverse</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> false</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">  duration</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">  variant</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#FFAB70">  stills</span><span style="color:#F97583">:</span><span style="color:#F97583"> readonly</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">title</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">; </span><span style="color:#FFAB70">image</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8"> }[];</span></span>
+<span class="line"><span style="color:#FFAB70">  reverse</span><span style="color:#F97583">?:</span><span style="color:#79B8FF"> boolean</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#FFAB70">  duration</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#FFAB70">  variant</span><span style="color:#F97583">:</span><span style="color:#9ECBFF"> "wide"</span><span style="color:#F97583"> |</span><span style="color:#9ECBFF"> "tall"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#79B8FF">Marquee</span></span>
+<span class="line"><span style="color:#B392F0">      vertical</span></span>
+<span class="line"><span style="color:#B392F0">      reverse</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{reverse}</span></span>
+<span class="line"><span style="color:#B392F0">      pauseOnHover</span></span>
+<span class="line"><span style="color:#B392F0">      applyMask</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#B392F0">      className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"h-full p-0"</span><span style="color:#E1E4E8">, duration)}</span></span>
+<span class="line"><span style="color:#E1E4E8">    ></span></span>
+<span class="line"><span style="color:#E1E4E8">      {stills.</span><span style="color:#B392F0">map</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">still</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#79B8FF">LandscapeStill</span></span>
+<span class="line"><span style="color:#B392F0">          key</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">reverse</span><span style="color:#F97583"> ?</span><span style="color:#9ECBFF"> "rev"</span><span style="color:#F97583"> :</span><span style="color:#9ECBFF"> "fwd"}-\${</span><span style="color:#E1E4E8">still</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">title</span><span style="color:#9ECBFF">}\`</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#E1E4E8">          {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">still}</span></span>
+<span class="line"><span style="color:#B392F0">          variant</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{variant}</span></span>
+<span class="line"><span style="color:#E1E4E8">        /></span></span>
+<span class="line"><span style="color:#E1E4E8">      ))}</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#79B8FF">Marquee</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> VerticalStillGallery</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#FFAB70">  reducedMotion</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">  className</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#FFAB70">  reducedMotion</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> boolean</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#FFAB70">  className</span><span style="color:#F97583">?:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}) {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (reducedMotion) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"grid h-full min-h-[18rem] grid-cols-2 gap-2 sm:gap-4"</span><span style="color:#E1E4E8">, className)}></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#79B8FF">MarqueeWell</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"h-full min-h-0 overflow-y-auto"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"flex flex-col gap-2.5"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">            {</span><span style="color:#79B8FF">STILLS_LEFT</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">slice</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">3</span><span style="color:#E1E4E8">).</span><span style="color:#B392F0">map</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">still</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">              &#x3C;</span><span style="color:#79B8FF">LandscapeStill</span><span style="color:#B392F0"> key</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{still.title} {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">still} </span><span style="color:#B392F0">variant</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"wide"</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">            ))}</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#79B8FF">MarqueeWell</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#79B8FF">MarqueeWell</span><span style="color:#B392F0"> tone</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"amber"</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"h-full min-h-0 overflow-y-auto"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"flex flex-col gap-2.5"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">            {</span><span style="color:#79B8FF">STILLS_RIGHT</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">slice</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">3</span><span style="color:#E1E4E8">).</span><span style="color:#B392F0">map</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">still</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">              &#x3C;</span><span style="color:#79B8FF">LandscapeStill</span><span style="color:#B392F0"> key</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{still.title} {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">still} </span><span style="color:#B392F0">variant</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"tall"</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">            ))}</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#79B8FF">MarqueeWell</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    );</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">div</span></span>
+<span class="line"><span style="color:#B392F0">      className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#9ECBFF">        "flex justify-evenly md:grid h-full min-h-[18rem] md:grid-cols-2 gap-2 sm:gap-4"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">        className,</span></span>
+<span class="line"><span style="color:#E1E4E8">      )}</span></span>
+<span class="line"><span style="color:#E1E4E8">    ></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#79B8FF">MarqueeWell</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"h-full min-h-0 max-w-fit"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#79B8FF">StillMarqueeColumn</span></span>
+<span class="line"><span style="color:#B392F0">          stills</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#79B8FF">STILLS_LEFT</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#B392F0">          duration</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"[--duration:32s] [--gap:12px]"</span></span>
+<span class="line"><span style="color:#B392F0">          variant</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"wide"</span></span>
+<span class="line"><span style="color:#E1E4E8">        /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#79B8FF">MarqueeWell</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#79B8FF">MarqueeWell</span><span style="color:#B392F0"> tone</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"amber"</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"h-full min-h-0 max-w-fit"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#79B8FF">StillMarqueeColumn</span></span>
+<span class="line"><span style="color:#B392F0">          stills</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#79B8FF">STILLS_RIGHT</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#B392F0">          reverse</span></span>
+<span class="line"><span style="color:#B392F0">          duration</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"[--duration:38s] [--gap:12px]"</span></span>
+<span class="line"><span style="color:#B392F0">          variant</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"tall"</span></span>
+<span class="line"><span style="color:#E1E4E8">        /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#79B8FF">MarqueeWell</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> PremieresSection</span><span style="color:#E1E4E8">({ </span><span style="color:#FFAB70">reducedMotion</span><span style="color:#E1E4E8"> }</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">reducedMotion</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> boolean</span><span style="color:#E1E4E8"> }) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> delays</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> heroSequenceDelays</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">section</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"pb-6 pt-8"</span><span style="color:#B392F0"> aria-labelledby</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"premieres-heading"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#79B8FF">CinemaContent</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"mb-4 flex items-end justify-between gap-4"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">h2</span></span>
+<span class="line"><span style="color:#B392F0">          id</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"premieres-heading"</span></span>
+<span class="line"><span style="color:#B392F0">          className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#9ECBFF">            "text-[22px] font-semibold tracking-[-0.02em]"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#F97583">            !</span><span style="color:#E1E4E8">reducedMotion </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#9ECBFF"> "cinema-hero-rise"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">          )}</span></span>
+<span class="line"><span style="color:#B392F0">          style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{reducedMotion </span><span style="color:#F97583">?</span><span style="color:#79B8FF"> undefined</span><span style="color:#F97583"> :</span><span style="color:#E1E4E8"> { animationDelay: </span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">delays</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">premieresLabel</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8"> }}</span></span>
+<span class="line"><span style="color:#E1E4E8">        ></span></span>
+<span class="line"><span style="color:#E1E4E8">          Premieres</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">h2</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">span</span></span>
+<span class="line"><span style="color:#B392F0">          className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"text-[13px] text-white/38"</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">!</span><span style="color:#E1E4E8">reducedMotion </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#9ECBFF"> "cinema-hero-rise"</span><span style="color:#E1E4E8">)}</span></span>
+<span class="line"><span style="color:#B392F0">          style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{reducedMotion </span><span style="color:#F97583">?</span><span style="color:#79B8FF"> undefined</span><span style="color:#F97583"> :</span><span style="color:#E1E4E8"> { animationDelay: </span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">delays</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">premieresMeta</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8"> }}</span></span>
+<span class="line"><span style="color:#E1E4E8">        ></span></span>
+<span class="line"><span style="color:#E1E4E8">          Now playing</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">span</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#79B8FF">CinemaContent</span><span style="color:#E1E4E8">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">div</span></span>
+<span class="line"><span style="color:#B392F0">        className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">reducedMotion </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#9ECBFF"> "cinema-hero-rise"</span><span style="color:#E1E4E8">)}</span></span>
+<span class="line"><span style="color:#B392F0">        style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{reducedMotion </span><span style="color:#F97583">?</span><span style="color:#79B8FF"> undefined</span><span style="color:#F97583"> :</span><span style="color:#E1E4E8"> { animationDelay: </span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">delays</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">premieresRail</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8"> }}</span></span>
+<span class="line"><span style="color:#E1E4E8">      ></span></span>
+<span class="line"><span style="color:#E1E4E8">        {reducedMotion </span><span style="color:#F97583">?</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#79B8FF">CinemaContent</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"overflow-x-auto overscroll-x-contain pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&#x26;::-webkit-scrollbar]:hidden"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">            &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"flex w-max gap-4 sm:gap-5"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">              {</span><span style="color:#79B8FF">PREMIERES</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">map</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">film</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">                &#x3C;</span><span style="color:#79B8FF">PosterCard</span><span style="color:#B392F0"> key</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{film.title} {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">film} /></span></span>
+<span class="line"><span style="color:#E1E4E8">              ))}</span></span>
+<span class="line"><span style="color:#E1E4E8">            &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#79B8FF">CinemaContent</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        ) </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">            &#x3C;</span><span style="color:#79B8FF">Marquee</span></span>
+<span class="line"><span style="color:#B392F0">              pauseOnHover</span></span>
+<span class="line"><span style="color:#B392F0">              applyMask</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#B392F0">              className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"py-1 pl-5 [--duration:38s] [--gap:1rem] sm:pl-8 sm:[--gap:1.25rem]"</span></span>
+<span class="line"><span style="color:#E1E4E8">            ></span></span>
+<span class="line"><span style="color:#E1E4E8">              {</span><span style="color:#79B8FF">PREMIERES</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">map</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">film</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">                &#x3C;</span><span style="color:#79B8FF">PosterCard</span><span style="color:#B392F0"> key</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{film.title} {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">film} /></span></span>
+<span class="line"><span style="color:#E1E4E8">              ))}</span></span>
+<span class="line"><span style="color:#E1E4E8">            &#x3C;/</span><span style="color:#79B8FF">Marquee</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        )}</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#85E89D">section</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> HeroPremiereCopy</span><span style="color:#E1E4E8">({ </span><span style="color:#FFAB70">reducedMotion</span><span style="color:#E1E4E8"> }</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">reducedMotion</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> boolean</span><span style="color:#E1E4E8"> }) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> delays</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> heroSequenceDelays</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (reducedMotion) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">p</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"text-[13px] font-medium tracking-[0.08em] text-white/45 uppercase"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          {</span><span style="color:#79B8FF">FEATURED</span><span style="color:#E1E4E8">.eyebrow}</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">h1</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"mt-3 max-w-[11ch] -translate-x-[0.13ex] text-balance text-[clamp(3.25rem,14vw,7.5rem)] leading-[0.9] font-semibold tracking-[-0.045em]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          {</span><span style="color:#79B8FF">FEATURED</span><span style="color:#E1E4E8">.title}</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">h1</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">p</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"mt-5 max-w-[28ch] text-[17px] leading-snug text-white/58 sm:text-[19px]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          {</span><span style="color:#79B8FF">FEATURED</span><span style="color:#E1E4E8">.tagline}</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">p</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"mt-3 text-[13px] text-white/38"</span><span style="color:#E1E4E8">>{</span><span style="color:#79B8FF">FEATURED</span><span style="color:#E1E4E8">.runtime}&#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"mt-8 flex flex-wrap items-center gap-3"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">button</span></span>
+<span class="line"><span style="color:#B392F0">            type</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"button"</span></span>
+<span class="line"><span style="color:#B392F0">            className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"inline-flex h-11 touch-manipulation items-center gap-2 rounded-full bg-white px-6 text-[14px] font-semibold text-black transition-transform active:scale-[0.98]"</span></span>
+<span class="line"><span style="color:#E1E4E8">          ></span></span>
+<span class="line"><span style="color:#E1E4E8">            &#x3C;</span><span style="color:#79B8FF">PlayIcon</span><span style="color:#B392F0"> aria-hidden</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"true"</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"size-4 fill-current"</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">            Play</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#85E89D">button</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">button</span></span>
+<span class="line"><span style="color:#B392F0">            type</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"button"</span></span>
+<span class="line"><span style="color:#B392F0">            className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"inline-flex h-11 touch-manipulation items-center justify-center rounded-full border border-white/18 bg-white/[0.04] px-6 text-[14px] font-medium text-white/78 transition-colors hover:bg-white/[0.08] active:scale-[0.98]"</span></span>
+<span class="line"><span style="color:#E1E4E8">          ></span></span>
+<span class="line"><span style="color:#E1E4E8">            Add to Up Next</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#85E89D">button</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/></span></span>
+<span class="line"><span style="color:#E1E4E8">    );</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">p</span></span>
+<span class="line"><span style="color:#B392F0">        className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"cinema-hero-rise text-[13px] font-medium tracking-[0.08em] text-white/45 uppercase"</span></span>
+<span class="line"><span style="color:#B392F0">        style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{{ animationDelay: </span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">delays</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">eyebrow</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8"> }}</span></span>
+<span class="line"><span style="color:#E1E4E8">      ></span></span>
+<span class="line"><span style="color:#E1E4E8">        {</span><span style="color:#79B8FF">FEATURED</span><span style="color:#E1E4E8">.eyebrow}</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">h1</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"mt-3 text-balance leading-[0.9]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#79B8FF">WaveReveal</span></span>
+<span class="line"><span style="color:#B392F0">          text</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#79B8FF">FEATURED</span><span style="color:#E1E4E8">.title}</span></span>
+<span class="line"><span style="color:#B392F0">          mode</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"word"</span></span>
+<span class="line"><span style="color:#B392F0">          direction</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"up"</span></span>
+<span class="line"><span style="color:#B392F0">          blur</span></span>
+<span class="line"><span style="color:#B392F0">          duration</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#9ECBFF">\`\${</span><span style="color:#79B8FF">HERO_WORD_DURATION_MS</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#B392F0">          delay</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{delays.title}</span></span>
+<span class="line"><span style="color:#B392F0">          className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">" -translate-x-[0.13ex] justify-start px-0 text-left font-semibold tracking-[-0.02em] text-[clamp(3.25rem,14vw,7.5rem)] md:px-0 md:text-[clamp(3.25rem,14vw,7.5rem)]"</span></span>
+<span class="line"><span style="color:#E1E4E8">        /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">h1</span><span style="color:#E1E4E8">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">p</span></span>
+<span class="line"><span style="color:#B392F0">        className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"cinema-hero-rise mt-5 max-w-[28ch] text-[17px] leading-snug text-white/58 sm:text-[19px]"</span></span>
+<span class="line"><span style="color:#B392F0">        style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{{ animationDelay: </span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">delays</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">tagline</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8"> }}</span></span>
+<span class="line"><span style="color:#E1E4E8">      ></span></span>
+<span class="line"><span style="color:#E1E4E8">        {</span><span style="color:#79B8FF">FEATURED</span><span style="color:#E1E4E8">.tagline}</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">p</span></span>
+<span class="line"><span style="color:#B392F0">        className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"cinema-hero-rise mt-3 text-[13px] text-white/38"</span></span>
+<span class="line"><span style="color:#B392F0">        style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{{ animationDelay: </span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">delays</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">runtime</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8"> }}</span></span>
+<span class="line"><span style="color:#E1E4E8">      ></span></span>
+<span class="line"><span style="color:#E1E4E8">        {</span><span style="color:#79B8FF">FEATURED</span><span style="color:#E1E4E8">.runtime}</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"mt-8 flex flex-wrap items-center gap-3"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">button</span></span>
+<span class="line"><span style="color:#B392F0">          type</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"button"</span></span>
+<span class="line"><span style="color:#B392F0">          className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"cinema-hero-rise inline-flex h-11 touch-manipulation items-center gap-2 rounded-full bg-white px-6 text-[14px] font-semibold text-black transition-transform active:scale-[0.98]"</span></span>
+<span class="line"><span style="color:#B392F0">          style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{{ animationDelay: </span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">delays</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">ctaPrimary</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8"> }}</span></span>
+<span class="line"><span style="color:#E1E4E8">        ></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#79B8FF">PlayIcon</span><span style="color:#B392F0"> aria-hidden</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"true"</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"size-4 fill-current"</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">          Play</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">button</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">button</span></span>
+<span class="line"><span style="color:#B392F0">          type</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"button"</span></span>
+<span class="line"><span style="color:#B392F0">          className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"cinema-hero-rise inline-flex h-11 touch-manipulation items-center justify-center rounded-full border border-white/18 bg-white/[0.04] px-6 text-[14px] font-medium text-white/78 transition-colors hover:bg-white/[0.08] active:scale-[0.98]"</span></span>
+<span class="line"><span style="color:#B392F0">          style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{{ animationDelay: </span><span style="color:#9ECBFF">\`\${</span><span style="color:#E1E4E8">delays</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">ctaSecondary</span><span style="color:#9ECBFF">}ms\`</span><span style="color:#E1E4E8"> }}</span></span>
+<span class="line"><span style="color:#E1E4E8">        ></span></span>
+<span class="line"><span style="color:#E1E4E8">          Add to Up Next</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">button</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> CraftFeaturePanel</span><span style="color:#E1E4E8">({ </span><span style="color:#FFAB70">reducedMotion</span><span style="color:#E1E4E8"> }</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">reducedMotion</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> boolean</span><span style="color:#E1E4E8"> }) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"@container overflow-hidden rounded-[1.35rem] border border-white/10 bg-[oklch(0.12_0.025_285)] shadow-[inset_0_1px_0_oklch(1_0_0/0.05)]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"grid md:grid-cols-[1fr_auto]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"flex flex-col justify-end gap-3 border-b border-white/8 p-5 sm:p-6 md:border-r md:border-b-0 md:p-6 lg:p-8"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">p</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"text-[13px] font-medium tracking-[0.08em] text-white/42 uppercase"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">            The craft</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">h2</span></span>
+<span class="line"><span style="color:#B392F0">            id</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"editorial-heading"</span></span>
+<span class="line"><span style="color:#B392F0">            className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"text-balance text-[clamp(1.5rem,4.5cqi,2.25rem)] leading-[1.08] font-semibold tracking-[-0.03em]"</span></span>
+<span class="line"><span style="color:#E1E4E8">          ></span></span>
+<span class="line"><span style="color:#E1E4E8">            Built for the big screen. Fine on your couch.</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#85E89D">h2</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">p</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"text-[14px] leading-relaxed text-white/52 sm:text-[15px]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">            Hero, poster row, two still columns — same page, different speeds.</span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#85E89D">p</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"max-h-[18rem] px-4x"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#79B8FF">VerticalStillGallery</span><span style="color:#B392F0"> reducedMotion</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{reducedMotion} </span><span style="color:#B392F0">className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"h-full"</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> default</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> CinemaRow</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">reducedMotion</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">setReducedMotion</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  useEffect</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> mq</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> window.</span><span style="color:#B392F0">matchMedia</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"(prefers-reduced-motion: reduce)"</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#B392F0"> apply</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#B392F0"> setReducedMotion</span><span style="color:#E1E4E8">(mq.matches);</span></span>
+<span class="line"><span style="color:#B392F0">    apply</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">    mq.</span><span style="color:#B392F0">addEventListener</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"change"</span><span style="color:#E1E4E8">, apply);</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> mq.</span><span style="color:#B392F0">removeEventListener</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"change"</span><span style="color:#E1E4E8">, apply);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }, []);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#79B8FF">CinemaEntranceStyles</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">div</span></span>
+<span class="line"><span style="color:#B392F0">        className</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#B392F0">cn</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#E1E4E8">          sans.variable,</span></span>
+<span class="line"><span style="color:#E1E4E8">          sans.className,</span></span>
+<span class="line"><span style="color:#9ECBFF">          "min-h-svh bg-black text-white selection:bg-white/20"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">        )}</span></span>
+<span class="line"><span style="color:#E1E4E8">      ></span></span>
+<span class="line"><span style="color:#E1E4E8">        {</span><span style="color:#6A737D">/* Hero — backdrop marquee + premiere type */</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">section</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"relative isolate overflow-hidden"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">div</span></span>
+<span class="line"><span style="color:#B392F0">            aria-hidden</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"true"</span></span>
+<span class="line"><span style="color:#B392F0">            className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,oklch(0.28_0.08_280_/_0.55)_0%,transparent_58%),linear-gradient(to_bottom,oklch(0.12_0.02_280)_0%,black_72%)]"</span></span>
+<span class="line"><span style="color:#E1E4E8">          /></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">div</span></span>
+<span class="line"><span style="color:#B392F0">            aria-hidden</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"true"</span></span>
+<span class="line"><span style="color:#B392F0">            className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black to-transparent"</span></span>
+<span class="line"><span style="color:#E1E4E8">          /></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#79B8FF">CinemaContent</span><span style="color:#B392F0"> className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"relative z-10 flex min-h-[min(88svh,920px)] flex-col justify-end pb-[calc(var(--demo-chrome-reserve,5rem)+2.5rem)] pt-[max(1.25rem,env(safe-area-inset-top))]"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">            &#x3C;</span><span style="color:#79B8FF">HeroPremiereCopy</span><span style="color:#B392F0"> reducedMotion</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{reducedMotion} /></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#79B8FF">CinemaContent</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">section</span><span style="color:#E1E4E8">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#79B8FF">PremieresSection</span><span style="color:#B392F0"> reducedMotion</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{reducedMotion} /></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">        {</span><span style="color:#6A737D">/* Editorial + opposing vertical still marquees */</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#85E89D">section</span></span>
+<span class="line"><span style="color:#B392F0">          className</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"border-t border-white/[0.06] py-16 sm:py-24"</span></span>
+<span class="line"><span style="color:#B392F0">          aria-labelledby</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"editorial-heading"</span></span>
+<span class="line"><span style="color:#E1E4E8">        ></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#79B8FF">CinemaContent</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">            &#x3C;</span><span style="color:#79B8FF">CraftFeaturePanel</span><span style="color:#B392F0"> reducedMotion</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{reducedMotion} /></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;/</span><span style="color:#79B8FF">CinemaContent</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;/</span><span style="color:#85E89D">section</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#79B8FF">CinemaRowNotes</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span></code></pre>`,
+    },
+  ],
 };

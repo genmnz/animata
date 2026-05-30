@@ -15,7 +15,25 @@ import {
 } from "@/components/ui/select";
 import type { SidebarNavItem } from "@/types";
 
-export default function NavMenu({
+type NavMenuProps =
+  | {
+      title: string;
+      value?: never;
+      sideBarNavItems?: never;
+      baseRoute?: never;
+    }
+  | {
+      title?: never;
+      value: string;
+      sideBarNavItems: SidebarNavItem[];
+      baseRoute: "docs" | "blog";
+    };
+
+function NavMenuTitle({ title }: { title: string }) {
+  return <span className="truncate font-medium text-foreground">{title}</span>;
+}
+
+function NavMenuSelect({
   value,
   sideBarNavItems,
   baseRoute,
@@ -26,15 +44,16 @@ export default function NavMenu({
 }) {
   const router = useRouter();
   const [navigating, setNavigating] = useState(false);
+
   return (
     <>
       <div className="text-foreground">
         <Select
           defaultValue={`/${baseRoute}${value ? `/${value}` : ""}`}
-          onValueChange={(value) => {
-            if (value) {
+          onValueChange={(nextValue) => {
+            if (nextValue) {
               setNavigating(true);
-              router.push(value);
+              router.push(nextValue);
             }
           }}
         >
@@ -86,4 +105,22 @@ export default function NavMenu({
       )}
     </>
   );
+}
+
+function isSelectNavMenu(props: NavMenuProps): props is Extract<NavMenuProps, { value: string }> {
+  return "value" in props && typeof props.value === "string";
+}
+
+export default function NavMenu(props: NavMenuProps) {
+  if (isSelectNavMenu(props)) {
+    return (
+      <NavMenuSelect
+        value={props.value}
+        sideBarNavItems={props.sideBarNavItems}
+        baseRoute={props.baseRoute}
+      />
+    );
+  }
+
+  return <NavMenuTitle title={props.title} />;
 }
