@@ -1,10 +1,12 @@
 "use client";
 
+import { Inbox, Landmark, PieChart } from "lucide-react";
 import Link from "next/link";
 import LEDBoard from "@/animata/card/led-board";
 import FluidTabs from "@/animata/tabs/fluid-tabs";
 import StaggeredLetter from "@/animata/text/staggered-letter";
 import ComponentLinkWrapper from "@/components/component-link-wrapper";
+import { siteStats } from "@/config/site-stats";
 import { cn } from "@/lib/utils";
 
 function DemoCard({
@@ -72,7 +74,28 @@ export default function SectionTwo() {
 
           <DemoCard href="/docs/tabs/fluid-tabs" label="Fluid Tabs">
             <div className="scale-110">
-              <FluidTabs />
+              <FluidTabs defaultActiveIndex={2}>
+                <FluidTabs.List aria-label="Fluid tabs">
+                  <FluidTabs.Tab label="Accounts">
+                    <FluidTabs.Icon>
+                      <Landmark aria-hidden />
+                    </FluidTabs.Icon>
+                    <FluidTabs.Label>Accounts</FluidTabs.Label>
+                  </FluidTabs.Tab>
+                  <FluidTabs.Tab label="Deposits">
+                    <FluidTabs.Icon>
+                      <Inbox aria-hidden />
+                    </FluidTabs.Icon>
+                    <FluidTabs.Label>Deposits</FluidTabs.Label>
+                  </FluidTabs.Tab>
+                  <FluidTabs.Tab label="Funds">
+                    <FluidTabs.Icon>
+                      <PieChart aria-hidden />
+                    </FluidTabs.Icon>
+                    <FluidTabs.Label>Funds</FluidTabs.Label>
+                  </FluidTabs.Tab>
+                </FluidTabs.List>
+              </FluidTabs>
             </div>
           </DemoCard>
 
@@ -86,7 +109,7 @@ export default function SectionTwo() {
             href="/docs"
             className="inline-flex items-center justify-center rounded-full border border-border px-6 py-2.5 text-[14px] font-semibold text-foreground transition-colors hover:bg-foreground/5"
           >
-            Browse all 158+ components →
+            Browse all {siteStats.componentsFormatted} components →
           </Link>
         </div>
       </div>

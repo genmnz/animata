@@ -173,6 +173,56 @@ function readIfExists(filePath) {
   }
 }
 
+function resolveAnimataSourceRef(sub) {
+  const tsx = path.join(ROOT, "animata", `${sub}.tsx`);
+  const ts = path.join(ROOT, "animata", `${sub}.ts`);
+  if (fs.existsSync(tsx)) return `animata/${sub}.tsx`;
+  if (fs.existsSync(ts)) return `animata/${sub}.ts`;
+  return null;
+}
+
+function hasPublishedRegistryDoc(sub) {
+  const parts = sub.split("/");
+  if (parts.length < 2) return false;
+  const [cat, name] = parts;
+  const mdxPath = path.join(DOCS_DIR, cat, `${name}.mdx`);
+  if (!fs.existsSync(mdxPath)) return false;
+  const fm = parseFrontmatter(fs.readFileSync(mdxPath, "utf8"));
+  return fm.published !== "false";
+}
+
+/** Co-located helpers (e.g. tabs/shared) resolve with ./shared after shadcn install. */
+function rewriteCoLocatedAnimataImports(content, fileRef) {
+  const dir = path.posix.dirname(fileRef);
+  return content.replace(/from (["'])@\/animata\/([^"']+)\1/g, (match, quote, sub) => {
+    const importDir = path.posix.dirname(`animata/${sub}`);
+    if (importDir !== dir) return match;
+    return `from ${quote}./${path.posix.basename(sub)}${quote}`;
+  });
+}
+
+function registryFileEntry(ref, content) {
+  const installPath = ref.startsWith("components/") ? ref : `components/${ref}`;
+  const rewriteRef = ref.startsWith("components/") ? ref.slice("components/".length) : ref;
+  return {
+    path: installPath,
+    type: "registry:component",
+    target: `~/${installPath}`,
+    content: rewriteCoLocatedAnimataImports(content, rewriteRef),
+  };
+}
+
+function addBundledSourceFile(ref, files, bundledRefs, queue) {
+  if (bundledRefs.has(ref)) return false;
+  const abs = path.join(ROOT, ref);
+  const content = readIfExists(abs);
+  if (!content) return false;
+  bundledRefs.add(ref);
+  files.push(registryFileEntry(ref, content));
+  queue.push(content);
+  return true;
+}
+
 function parseImports(source) {
   const imports = [];
   const re = /import\s+(?:[^'"]*?\s+from\s+)?["']([^"']+)["']/g;
@@ -187,19 +237,22 @@ function classifyImports(source) {
   const uiRefs = new Set();
   const hookRefs = new Set();
   const libRefs = new Set();
+  const shapeRefs = new Set();
   for (const spec of parseImports(source)) {
     if (spec.startsWith("@/animata/")) {
       const sub = spec.slice("@/animata/".length);
       animataRefs.add(sub);
     } else if (spec.startsWith("@/components/ui/")) {
       uiRefs.add(spec.slice("@/components/ui/".length));
+    } else if (spec.startsWith("@/components/shapes/")) {
+      shapeRefs.add(spec.slice("@/components/shapes/".length));
     } else if (spec.startsWith("@/hooks/")) {
       hookRefs.add(spec.slice("@/hooks/".length));
     } else if (spec.startsWith("@/lib/") && !spec.endsWith("/utils")) {
       libRefs.add(spec.slice("@/lib/".length));
     }
   }
-  return { animataRefs, uiRefs, hookRefs, libRefs };
+  return { animataRefs, uiRefs, hookRefs, libRefs, shapeRefs };
 }
 
 function toRegistryItemName(category, name) {
@@ -242,25 +295,37 @@ function buildItem(mdxPath) {
     return null;
   }
 
-  const files = [
-    {
-      path: `components/${primaryRef}`,
-      type: "registry:component",
-      target: `~/components/${primaryRef}`,
-      content: primarySource,
-    },
-  ];
+  const bundledRefs = new Set([primaryRef]);
+  const files = [registryFileEntry(primaryRef, primarySource)];
+  const queue = [primarySource];
+
+  for (const ref of fileRefs) {
+    if (ref === primaryRef) continue;
+    if (ref.startsWith("hooks/")) continue;
+    addBundledSourceFile(ref, files, bundledRefs, queue);
+  }
 
   const dependencies = new Set(extractNpmDependencies(src));
   const registryDependencies = new Set();
   const processedHooks = new Set();
-
-  const queue = [primarySource];
   while (queue.length) {
     const source = queue.shift();
-    const { animataRefs, uiRefs, hookRefs } = classifyImports(source);
+    const { animataRefs, uiRefs, hookRefs, shapeRefs } = classifyImports(source);
+
+    for (const shape of shapeRefs) {
+      addBundledSourceFile(`components/shapes/${shape}.tsx`, files, bundledRefs, queue);
+    }
 
     for (const sub of animataRefs) {
+      const ref = resolveAnimataSourceRef(sub);
+      if (ref && !hasPublishedRegistryDoc(sub)) {
+        if (ref !== primaryRef) {
+          addBundledSourceFile(ref, files, bundledRefs, queue);
+        }
+        if (ref === primaryRef || bundledRefs.has(ref)) {
+          continue;
+        }
+      }
       const parts = sub.split("/");
       if (parts.length < 2) continue;
       const [cat, comp] = parts;

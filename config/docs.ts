@@ -1,6 +1,10 @@
 import { docs as allDocs } from "#site/content";
 
+import { DEFAULT_GROUP, DEFAULT_ITEM, itemHref } from "@/app/demo/demos";
 import type { MainNavItem, SidebarNavItem } from "@/types";
+
+const defaultDemoHref =
+  DEFAULT_GROUP && DEFAULT_ITEM ? itemHref(DEFAULT_GROUP, DEFAULT_ITEM) : "/demo";
 
 interface DocsConfig {
   mainNav: MainNavItem[];
@@ -44,6 +48,7 @@ const sidebarNav: SidebarNavItem[] = [
         href: "/docs/changelog",
         items: [
           { title: "Overview", href: "/docs/changelog", items: [] },
+          { title: "May 2026", href: "/docs/changelog/2026-05", items: [] },
           { title: "April 2026", href: "/docs/changelog/2026-04", items: [] },
           { title: "March 2026", href: "/docs/changelog/2026-03", items: [] },
           { title: "January 2026", href: "/docs/changelog/2026-01", items: [] },
@@ -75,6 +80,11 @@ const sidebarNav: SidebarNavItem[] = [
       {
         title: "Adding components",
         href: "/docs/contributing/components",
+        items: [],
+      },
+      {
+        title: "Live demos",
+        href: "/docs/contributing/demos",
         items: [],
       },
       {
@@ -232,8 +242,8 @@ export const docsConfig: DocsConfig = {
       href: sidebarNav[2].items?.[0]?.href ?? sidebarNav[2]?.href,
     },
     {
-      title: "Blog",
-      href: "/blog",
+      title: "Demos",
+      href: defaultDemoHref,
     },
     {
       title: "Changelog",

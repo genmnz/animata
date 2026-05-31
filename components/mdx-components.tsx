@@ -19,7 +19,7 @@ import { Callout } from "@/components/callout";
 import { CodeBlockWrapper } from "@/components/code-block-wrapper";
 import { ComponentExample } from "@/components/component-example";
 import ComponentListItem from "@/components/component-list-item";
-import { ComponentPreview } from "@/components/component-preview";
+import { ComponentPreview, SingleComponentPreview } from "@/components/component-preview";
 import { ComponentSource } from "@/components/component-source";
 import { CopyButton, CopyNpmCommandButton, CopyTouchCommandButton } from "@/components/copy-button";
 import { CopyProxy } from "@/components/copy-proxy";
@@ -38,8 +38,52 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Event } from "@/lib/events";
+import {
+  inlineCodeClassName,
+  inlineCodePreResetClasses,
+  isInlineCodeElement,
+} from "@/lib/inline-code";
 import { cn } from "@/lib/utils";
 import { baseComponents } from "./mdx-base-components";
+
+/** Add line-number gutters to fenced code blocks unless hideLineNumbers is in meta. */
+type CodeElementNode = UnistNode & {
+  type?: string;
+  tagName?: string;
+  properties?: Record<string, unknown>;
+  children?: UnistNode[];
+  data?: {
+    meta?: string | { __raw?: string };
+  };
+};
+
+const rehypeEnableLineNumbers = () => (tree: UnistTree) => {
+  visit(tree, (node: CodeElementNode) => {
+    if (node.type !== "element" || node.tagName !== "code") return;
+
+    const lang = node.properties?.["data-language"];
+    if (typeof lang !== "string" || !lang) return;
+
+    const meta = node.data?.meta;
+    const rawMeta =
+      typeof meta === "string" ? meta : typeof meta?.__raw === "string" ? meta.__raw : "";
+    if (rawMeta.includes("hideLineNumbers")) return;
+
+    const lines = (node.children ?? []).filter(
+      (child) =>
+        child.type === "element" &&
+        (child.properties?.["data-line"] !== undefined ||
+          (Array.isArray(child.properties?.className) &&
+            child.properties.className.includes("line"))),
+    );
+
+    if (lines.length === 0) return;
+
+    node.properties ??= {};
+    node.properties["data-line-numbers"] = "";
+    node.properties["data-line-numbers-max-digits"] = String(lines.length).length;
+  });
+};
 
 const setupCodeSnippet = () => (tree: UnistTree) => {
   visit(tree, (node: UnistNode) => {
@@ -119,6 +163,25 @@ const components = {
   AlertDescription,
   InView,
   PreviewContainer,
+  PreviewGrid: ({ children }: { children: React.ReactNode }) => (
+    <div className="not-prose my-8 grid w-full grid-cols-1 gap-4 md:grid-cols-2">{children}</div>
+  ),
+  PreviewGridItem: ({
+    title,
+    fullWidth,
+    children,
+  }: {
+    title?: string;
+    fullWidth?: boolean;
+    children: React.ReactNode;
+  }) => (
+    <div className={cn("flex min-w-0 flex-col gap-2", fullWidth && "md:col-span-2")}>
+      {title ? <p className="text-sm font-medium text-muted-foreground">{title}</p> : null}
+      <div className="preview-light dark:preview-dark w-full overflow-x-auto rounded-lg border bg-muted/30">
+        {children}
+      </div>
+    </div>
+  ),
   ...baseComponents,
   ChangeLogComponents: ({ children }: { children: React.ReactNode }) => {
     return <div className="grid md:grid-cols-2 gap-2 py-2">{children}</div>;
@@ -163,7 +226,9 @@ const components = {
       <>
         <pre
           className={cn(
-            "mb-4 mt-6 max-h-[650px] overflow-x-auto rounded-lg bg-zinc-800 py-4 [&_code]:bg-transparent",
+            "mb-4 mt-6 max-h-[650px] overflow-x-auto rounded-lg bg-zinc-800 py-4",
+            inlineCodePreResetClasses,
+            "[&_code]:font-mono [&_code]:text-sm",
             className,
           )}
           {...props}
@@ -199,19 +264,18 @@ const components = {
       </>
     );
   },
-  code: ({ className, ...props }: HTMLAttributes<HTMLElement>) => (
-    <code
-      className={cn(
-        "relative rounded bg-zinc-800 px-2 py-[0.2rem] font-mono text-sm text-white",
-        className,
-      )}
-      {...props}
-    />
-  ),
+  code: ({ className, ...props }: HTMLAttributes<HTMLElement>) => {
+    if (!isInlineCodeElement({ className, ...props })) {
+      return <code className={className} {...props} />;
+    }
+
+    return <code className={cn(inlineCodeClassName, className)} {...props} />;
+  },
   Image: ({ alt, ...props }: ComponentProps<"img">) => <img alt={alt} {...props} />,
   Modal,
   Callout,
   ComponentPreview,
+  SingleComponentPreview,
   ComponentExample,
   ComponentSource,
   RegistryInstall,
@@ -299,18 +363,25 @@ interface MdxProps {
 
 function stripImports(code: string) {
   const animataRegex = /^import\s+(\w+)\s+from\s+["']@\/animata\/([^"']+)["'];?\s*$/gm;
+  const componentsRegex =
+    /^import\s+\{?\s*\w+(?:\s*,\s*\w+)*\s*\}?\s+from\s+["']@\/components\/[^"']+["'];?\s*$/gm;
   const imports: Array<{ name: string; subpath: string }> = [];
-  let strippedCode = code.replace(animataRegex, (_, name, subpath) => {
-    imports.push({ name, subpath });
-    return "";
-  });
-  // Also strip imports from @/components/ — these components are registered
-  // directly in the `components` map above (e.g. InView), so the import line
-  // in the MDX source would otherwise leave MDXRemote unable to resolve them.
-  strippedCode = strippedCode.replace(
-    /^import\s+\{?\s*\w+(?:\s*,\s*\w+)*\s*\}?\s+from\s+["']@\/components\/[^"']+["'];?\s*$/gm,
-    "",
-  );
+
+  const stripFromSegment = (segment: string) => {
+    let stripped = segment.replace(animataRegex, (_, name, subpath) => {
+      imports.push({ name, subpath });
+      return "";
+    });
+    stripped = stripped.replace(componentsRegex, "");
+    return stripped;
+  };
+
+  // Only strip top-level MDX imports — not lines inside fenced code blocks.
+  const strippedCode = code
+    .split(/(```[\s\S]*?```)/g)
+    .map((part) => (part.startsWith("```") ? part : stripFromSegment(part)))
+    .join("");
+
   return { strippedCode, imports };
 }
 
@@ -351,6 +422,7 @@ const mdxOptions: Omit<CompileOptions, "outputFormat" | "providerImportSource"> 
         },
       } satisfies PrettyCodeOptions,
     ],
+    rehypeEnableLineNumbers,
     [
       rehypeAutolinkHeadings,
       {

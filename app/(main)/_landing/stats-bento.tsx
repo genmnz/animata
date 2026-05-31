@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type CSSProperties, useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 
 import AnimatedBorderTrail from "@/animata/container/animated-border-trail";
 import Marquee from "@/animata/container/marquee";
@@ -13,7 +13,10 @@ import ComponentLinkWrapper from "@/components/component-link-wrapper";
 import { Icons } from "@/components/icons";
 import RemountOnMouseIn from "@/components/remount-on-mouse-in";
 import { docsConfig } from "@/config/docs";
+import { siteStats } from "@/config/site-stats";
 import { cn } from "@/lib/utils";
+
+import { CardStackBento } from "./card-stack-bento";
 
 // Get component categories from the sidebar nav (skip Getting Started + Contributing)
 const categories = docsConfig.sidebarNav
@@ -24,9 +27,7 @@ const categories = docsConfig.sidebarNav
     count: item.items?.length ?? 0,
   }));
 
-const components = docsConfig.sidebarNav
-  .filter((item) => item.title !== "Getting Started" && item.title !== "Contributing")
-  .reduce((acc, group) => acc + (group.items?.length ?? 0), 0);
+const components = siteStats.componentCount;
 
 const stargazers = [
   {
@@ -158,7 +159,7 @@ export default function StatsBento() {
               <strong className="font-(family-name:--font-mono) text-2xl font-bold tabular-nums text-foreground sm:text-3xl lg:text-4xl">
                 <RemountOnMouseIn>
                   <Ticker
-                    value="2,506+"
+                    value={siteStats.githubStarsFormatted}
                     className="font-(family-name:--font-mono) font-bold tabular-nums"
                   />
                 </RemountOnMouseIn>
@@ -302,6 +303,12 @@ export default function StatsBento() {
           </BentoCard>
         </div>
 
+        <div className="mt-3 sm:mt-4">
+          <BentoCard className="min-h-[22rem] sm:min-h-[24rem]">
+            <CardStackBento />
+          </BentoCard>
+        </div>
+
         {/* Built with care — full width */}
         <div className="mt-3 sm:mt-4">
           <BentoCard className="">
@@ -320,7 +327,7 @@ export default function StatsBento() {
                 <div>
                   <div className="flex items-baseline gap-0.5">
                     <span className="font-(family-name:--font-mono) text-3xl font-bold leading-none tabular-nums text-foreground sm:text-4xl">
-                      1,100
+                      1,325
                     </span>
                     <span className="text-lg text-muted-foreground">+</span>
                   </div>
@@ -331,7 +338,7 @@ export default function StatsBento() {
                 <div>
                   <div className="flex items-baseline gap-0.5">
                     <span className="font-(family-name:--font-mono) text-3xl font-bold leading-none tabular-nums text-foreground sm:text-4xl">
-                      300
+                      425
                     </span>
                     <span className="text-lg text-muted-foreground">+</span>
                   </div>

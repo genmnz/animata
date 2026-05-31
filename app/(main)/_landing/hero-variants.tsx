@@ -1,7 +1,7 @@
 "use client";
 
+import { Inbox, Landmark, PieChart } from "lucide-react";
 import Link from "next/link";
-
 import Duolingo from "@/animata/button/duolingo";
 import ShiningButton from "@/animata/button/shining-button";
 import FluidTabs from "@/animata/tabs/fluid-tabs";
@@ -11,6 +11,7 @@ import CarbonAds from "@/components/ads";
 import ComponentLinkWrapper from "@/components/component-link-wrapper";
 import { Icons } from "@/components/icons";
 import { siteConfig } from "@/config/site";
+import { siteStats } from "@/config/site-stats";
 
 function HeroCTAs() {
   return (
@@ -64,8 +65,8 @@ export function HeroVariantA() {
             Components with personality. For sites with personality.
           </h1>
           <p className="mt-5 max-w-[400px] text-[16px] leading-[1.6] text-[hsl(var(--text-secondary))]">
-            158+ animated React components. Copy the code, drop it in your project. Every
-            interaction feels intentional.
+            {siteStats.componentsFormatted} animated React components. Copy the code, drop it in
+            your project. Every interaction feels intentional.
           </p>
           <HeroCTAs />
           <div className="mt-7 hidden lg:block">
@@ -120,14 +121,14 @@ export function HeroVariantB() {
     <HeroShell>
       <div className="mx-auto max-w-3xl text-center">
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          158+ animated components
+          {siteStats.componentsFormatted} animated components
         </p>
         <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.5rem,6vw,4.5rem)] leading-[1] tracking-[-0.03em] text-foreground">
           Make every click feel like something.
         </h1>
         <p className="mx-auto mt-5 max-w-lg text-[17px] leading-[1.6] text-[hsl(var(--text-secondary))]">
-          158+ animated React components. Copy the code, paste into your project. Every interaction
-          delights.
+          {siteStats.componentsFormatted} animated React components. Copy the code, paste into your
+          project. Every interaction delights.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -171,7 +172,28 @@ export function HeroVariantB() {
           className="group flex flex-col overflow-hidden rounded-2xl bg-[hsl(var(--surface-card))] shadow-[var(--shadow-md)]"
         >
           <div className="flex flex-1 items-center justify-center px-4 py-8">
-            <FluidTabs />
+            <FluidTabs defaultActiveIndex={2}>
+              <FluidTabs.List aria-label="Fluid tabs">
+                <FluidTabs.Tab label="Accounts">
+                  <FluidTabs.Icon>
+                    <Landmark aria-hidden />
+                  </FluidTabs.Icon>
+                  <FluidTabs.Label>Accounts</FluidTabs.Label>
+                </FluidTabs.Tab>
+                <FluidTabs.Tab label="Deposits">
+                  <FluidTabs.Icon>
+                    <Inbox aria-hidden />
+                  </FluidTabs.Icon>
+                  <FluidTabs.Label>Deposits</FluidTabs.Label>
+                </FluidTabs.Tab>
+                <FluidTabs.Tab label="Funds">
+                  <FluidTabs.Icon>
+                    <PieChart aria-hidden />
+                  </FluidTabs.Icon>
+                  <FluidTabs.Label>Funds</FluidTabs.Label>
+                </FluidTabs.Tab>
+              </FluidTabs.List>
+            </FluidTabs>
           </div>
           <div className="flex items-center justify-between px-4 py-2.5">
             <span className="text-[12px] font-semibold text-foreground/50">Fluid Tabs</span>
@@ -222,8 +244,8 @@ export function HeroVariantC() {
             <span className="text-[hsl(var(--accent))]">Yours won&apos;t.</span>
           </h1>
           <p className="mt-5 max-w-[420px] text-[16px] leading-[1.6] text-[hsl(var(--text-secondary))]">
-            158+ animated React components that feel hand-crafted. Copy the code, paste it in. Ship
-            something people notice.
+            {siteStats.componentsFormatted} animated React components that feel hand-crafted. Copy
+            the code, paste it in. Ship something people notice.
           </p>
           <HeroCTAs />
           <div className="mt-7 hidden lg:block">

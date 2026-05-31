@@ -5,12 +5,12 @@ import { notFound } from "next/navigation";
 import { docs as allDocs } from "#site/content";
 import NavMenu from "@/app/(main)/docs/[[...slug]]/nav-menu";
 import CarbonAds from "@/components/ads";
+import { DocDemoLinks } from "@/components/doc-demo-links";
 import { Mdx } from "@/components/mdx-components";
 import { DocsPager } from "@/components/pager";
 import { DashboardTableOfContents } from "@/components/toc";
 import { badgeVariants } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { docsConfig } from "@/config/docs";
 import { siteConfig } from "@/config/site";
 import { getTableOfContents } from "@/lib/toc";
 import { absoluteUrl, cn } from "@/lib/utils";
@@ -90,11 +90,7 @@ export default async function DocPage({ params }: DocPageProps) {
         <div className="mb-4 flex items-center space-x-1 text-sm text-muted-foreground">
           <div className="overflow-hidden text-ellipsis whitespace-nowrap">Docs</div>
           <ChevronRightIcon className="h-4 w-4" />
-          <NavMenu
-            baseRoute="docs"
-            sideBarNavItems={docsConfig.sidebarNav}
-            value={doc.slugAsParams}
-          />
+          <NavMenu title={doc.title} />
         </div>
         <div className="space-y-2">
           <h1 className={cn("scroll-m-20 text-4xl font-bold tracking-tight")}>{doc.title}</h1>
@@ -141,6 +137,7 @@ export default async function DocPage({ params }: DocPageProps) {
             )}
           </div>
         ) : null}
+        <DocDemoLinks docSlug={doc.slugAsParams} />
         <div className="relative w-fit overflow-y-hidden">
           <CarbonAds />
         </div>
