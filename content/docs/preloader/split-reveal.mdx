@@ -1,0 +1,71 @@
+---
+title: Split Reveal
+description: Full-screen preloader that loads images, locks scroll, then opens from the center seam.
+author: hari
+---
+
+<ComponentPreview name="preloader-split-reveal--primary" />
+
+## Installation
+
+### CLI
+
+<RegistryInstall category="preloader" name="split-reveal" />
+
+### Manual
+
+<Steps>
+<Step>Run the following command</Step>
+
+It will create a new file `split-reveal.tsx` inside the `components/animata/preloader` directory.
+
+```bash
+mkdir -p components/animata/preloader && touch components/animata/preloader/split-reveal.tsx
+```
+
+<Step>Paste the code</Step>{" "}
+
+Open the newly created file and paste the following code:
+
+```jsx file=<rootDir>/animata/preloader/split-reveal.tsx
+
+```
+
+</Steps>
+
+## Usage
+
+Place it next to your page. No wrapper required.
+
+```tsx
+<section>{/* your layout */}</section>
+
+<SplitReveal
+  images={imageUrls}
+  lockScroll
+  onComplete={() => setReady(true)}
+  renderProgress={({ loaded, total }) => (
+    <p>
+      {loaded}/{total}
+    </p>
+  )}
+/>
+```
+
+Use `renderProgress` to swap the center counter while keeping the default shutters. Pass `children` to replace the whole overlay.
+
+After the last image decodes, the loader waits (`holdMs`), fades the progress UI (`progressFadeMs`), then splits the shutters. Timing runs on CSS keyframes with a custom cubic-bezier. `revealDuration` defaults to `0.85`s.
+
+## How it works
+
+The component preloads every URL in `images` with `Image()` plus `decode()` when available. Scroll locks while the overlay is active and releases on `done`.
+
+Phases go `loading` → `fade-ui` → `reveal` → `done`. Shutters are plain divs animated with `@keyframes`; no Motion dependency. `useSplitReveal()` exposes phase, counts, and colors if you build a custom overlay in `children`.
+
+Restoring a tab from bfcache gets a fresh boot id so the preloader does not stick on a stale `0/0` count.
+
+## Credits
+
+Built by [hari](https://github.com/hari)
+
+Images from [Lummi](https://www.lummi.ai)
