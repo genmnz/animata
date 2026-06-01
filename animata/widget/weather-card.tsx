@@ -1,25 +1,58 @@
 import { CircleArrowUp, CloudSunRain } from "lucide-react";
 
-export default function WeatherCard() {
+import { cn } from "@/lib/utils";
+
+export type WeatherCardProps = {
+  className?: string;
+  city?: string;
+  temperature?: number;
+  feelsLike?: number;
+  high?: number;
+  low?: number;
+};
+
+export default function WeatherCard({
+  className,
+  city = "Tokyo",
+  temperature = 19,
+  feelsLike = 21,
+  high = 24,
+  low = 9,
+}: WeatherCardProps) {
   return (
-    <div className="relative flex size-52 flex-col rounded-3xl bg-linear-to-r from-gray-200 to-gray-300 bg-clip-padding p-4 backdrop-blur-sm backdrop-filter dark:from-gray-700 dark:to-gray-900">
-      <div className="flex flex-1 flex-col gap-2 dark:text-white">
-        <p className="city opacity-70">Tokyo</p>
-        <div className="flex items-center">
-          <CloudSunRain className="h-10 w-10" />
-          <p className="text-5xl font-black">19&deg;</p>
+    <div
+      className={cn(
+        "flex size-52 flex-col rounded-3xl border border-border bg-linear-to-br from-muted/80 to-muted p-4 font-sans shadow-md",
+        className,
+      )}
+    >
+      <div className="flex min-h-0 flex-1 flex-col justify-start gap-2">
+        <p className="text-[15px] font-semibold leading-none text-foreground">{city}</p>
+        <div className="flex items-start gap-2">
+          <CloudSunRain
+            className="mt-1 size-8 shrink-0 text-foreground/75"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <p className="text-[34px] font-normal leading-none tabular-nums tracking-tight text-foreground">
+            {temperature}&deg;
+          </p>
         </div>
-        <p className="feels-like opacity-70">Feels like 21&deg;</p>
+        <p className="text-[13px] leading-none text-muted-foreground">
+          Feels like <span className="tabular-nums">{feelsLike}&deg;</span>
+        </p>
       </div>
-      <div className="flex justify-between rounded-xl bg-gray-400/30 bg-clip-padding py-1 backdrop-blur-lg backdrop-filter">
-        <div className="flex items-center gap-1 px-2 text-orange-500 dark:text-orange-200">
-          <CircleArrowUp className="h-5 w-5" />
-          24&deg;
+      <div className="flex shrink-0 justify-between rounded-xl border border-border/60 bg-background/50 px-2.5 py-2 text-[13px] font-medium tabular-nums leading-none backdrop-blur-sm">
+        <div className="flex items-center gap-1 text-orange-600 dark:text-orange-300">
+          <CircleArrowUp className="size-3.5" strokeWidth={2} aria-hidden />
+          {high}&deg;
         </div>
-        <p className="text-black opacity-50">|</p>
-        <div className="flex items-center gap-1 px-3 text-green-800 dark:text-green-200">
-          <CircleArrowUp className="h-5 w-5 rotate-180" />
-          9&deg;
+        <span className="text-border/80" aria-hidden>
+          |
+        </span>
+        <div className="flex items-center gap-1 text-sky-700 dark:text-sky-300">
+          <CircleArrowUp className="size-3.5 rotate-180" strokeWidth={2} aria-hidden />
+          {low}&deg;
         </div>
       </div>
     </div>
